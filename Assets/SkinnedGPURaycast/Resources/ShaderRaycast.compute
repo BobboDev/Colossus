@@ -1,0 +1,149 @@
+// Each #kernel tells which function to compile; you can have many kernels
+#pragma kernel ShaderRaycast
+
+struct RaycastHit
+{
+    float3 barycentricCoordinate;
+    float3 faceNormal;
+    float3 hitPoint;
+    // float2 textureCoord;
+    float distance;
+    uint3 _triangle;
+    uint triangleIndex;
+    uint rayId;
+};
+
+struct Ray
+{
+    float3 origin;
+    float3 direction;
+    uint id;
+};
+
+AppendStructuredBuffer<RaycastHit> Result;
+ByteAddressBuffer _Vertices;
+// StructuredBuffer<float2> _UVs;
+ByteAddressBuffer _Triangles;
+StructuredBuffer<Ray> _Rays;
+float maxDistance;
+int indexStride;
+float4x4 worldToLocalMatrix;
+
+float lengthsq(float3 p) { return dot(p, p); }
+
+float3 project(float3 a, float3 b) { return mul(dot(a, b) / dot(b, b), b); }
+
+uint3 LoadTriangles(uint index)
+{
+    switch (indexStride)
+    {
+    case 4:
+        return _Triangles.Load3(index * 4 * 3);
+    case 2:
+        // _Triangles's dimension is in bytes.
+        const uint triOffset = index * 2 * 3;
+        const uint div = triOffset / 4;
+        const uint mod = triOffset - div * 4;
+
+        const uint2 rawTri = _Triangles.Load2(div * 4);
+        return mod == 0
+                   ? uint3(
+                       rawTri.x & 0xffff,
+                       (rawTri.x & 0xffff0000) >> 16,
+                       rawTri.y & 0xffff
+                   )
+                   : uint3(
+                       (rawTri.x & 0xffff0000) >> 16,
+                       rawTri.y & 0xffff,
+                       (rawTri.y & 0xffff0000) >> 16
+                   );
+    default:
+        return 0; // Unsupported stride
+    }
+}
+
+[numthreads(64,1,1)]
+void ShaderRaycast(uint3 id : SV_DispatchThreadID)
+{
+    const uint3 tri = LoadTriangles(id.x);
+
+    const float3 va = asfloat(_Vertices.Load3(tri.x * 40));
+    const float3 vb = asfloat(_Vertices.Load3(tri.y * 40));
+    const float3 vc = asfloat(_Vertices.Load3(tri.z * 40));
+
+    const float3x3 edge = {vb - va, vc - vb, va - vc};
+    const float3 faceNormal = cross(edge[0], edge[1]);
+    const float3 triCentroid = (va + vb + vc) / 3.0;
+    const float radiussq = max(max(lengthsq(va - triCentroid), lengthsq(vb - triCentroid)), lengthsq(vc - triCentroid));
+    const float3x3 inwardEdgeNormals = {
+        cross(edge[0], -faceNormal),
+        cross(edge[1], -faceNormal),
+        cross(edge[2], -faceNormal)
+    };
+    const float area = length(cross(vb - va, vc - va)); // main triangle area
+
+    float3 origin;
+    float3 direction;
+    uint rayCount, rayStride;
+    _Rays.GetDimensions(rayCount, rayStride);
+
+    [loop]
+    for (uint index = 0; index < rayCount; index++)
+    {
+        origin = mul(worldToLocalMatrix, float4(_Rays[index].origin, 1.0)).xyz;
+        direction = mul(worldToLocalMatrix, float4(_Rays[index].direction, 0.0)).xyz;
+        
+        const float3 originToPlane = project(va - origin, faceNormal);
+        const bool isFacingRay = dot(direction, faceNormal) < 0.0 && // check if face points opposite direction
+            dot(originToPlane, direction) >= 0.0 && // check if direction is going towards the triangle's plane
+            (dot(va - origin, direction) >= 0.0 || // check that at least one vertex is 'ahead'
+                dot(vb - origin, direction) >= 0.0 ||
+                dot(vc - origin, direction) >= 0.0);
+        // if (!isFacingRay)
+        // {
+        //     continue;
+        // }
+
+        const float3 directionPerp = project(direction, faceNormal);
+        const float t = lengthsq(originToPlane) / lengthsq(directionPerp);
+        const float3 rayPointInTrianglePlane = mul(direction, sqrt(t)) + origin;
+        // if (isnan(t) ||
+        //     lengthsq(rayPointInTrianglePlane - triCentroid) > radiussq || // check if triangle is far off the ray
+        //     lengthsq(rayPointInTrianglePlane - origin) > maxDistance * maxDistance) // check if triangle is too far ahead
+        // {
+        //     continue;
+        // }
+
+        const bool isHit = dot(rayPointInTrianglePlane - va, inwardEdgeNormals[0]) >= 0.0 &&
+            dot(rayPointInTrianglePlane - vb, inwardEdgeNormals[1]) >= 0.0 &&
+            dot(rayPointInTrianglePlane - vc, inwardEdgeNormals[2]) >= 0.0;
+        
+        if (isFacingRay && isHit && lengthsq(rayPointInTrianglePlane - origin) <= maxDistance * maxDistance)
+        {
+            // calculate vectors from point f to vertices p1, p2 and p3:
+            const float3 f0 = va - rayPointInTrianglePlane;
+            const float3 f1 = vb - rayPointInTrianglePlane;
+            const float3 f2 = vc - rayPointInTrianglePlane;
+            // calculate the areas and factors (order of parameters doesn't matter):
+            float3 a = float3(
+                length(cross(f1, f2)), // p1's triangle area
+                length(cross(f2, f0)), // p2's triangle area 
+                length(cross(f0, f1)) // p3's triangle area
+            ) / area;
+
+            RaycastHit hit;
+            hit.distance = length(rayPointInTrianglePlane - origin);
+            hit.faceNormal = normalize(faceNormal);
+            hit.hitPoint = rayPointInTrianglePlane;
+            hit._triangle = tri;
+            hit.triangleIndex = id.x;
+            hit.rayId = _Rays[index].id;
+            
+            // find the uv corresponding to hit point:        
+            // hit.textureCoord = 0; // TODO _UVs[tri.x] * a.x + _UVs[tri.y] * a.y + _UVs[tri.z] * a.z;
+            hit.barycentricCoordinate = a;
+
+            Result.Append(hit);
+        }
+    }
+}

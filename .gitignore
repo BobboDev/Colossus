@@ -1,0 +1,8 @@
+/.vscode/launch.json
+/Library/
+/Logs/
+/Temp/
+/UserSettings/
+/obj/
+*.sln
+*.csproj

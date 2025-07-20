@@ -1,0 +1,8 @@
+thigh_stretch.l = upper_leg.L
+thigh_stretch.r = upper_leg.R
+leg_stretch.l = lower_leg.L
+leg_stretch.r = lower_leg.R
+foot.l = foot.L
+foot.r = foot.R
+root = Armature.001
+root.x = hips

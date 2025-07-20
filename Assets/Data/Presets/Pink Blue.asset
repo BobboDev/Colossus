@@ -1,0 +1,41 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: ec070ed365df2ab429df1e24d25c635c, type: 3}
+  m_Name: Pink Blue
+  m_EditorClassIdentifier: 
+  presetname: 
+  skyboxMaterial: {fileID: 0}
+  lightingSource: 0
+  ambientColour: {r: 0, g: 0, b: 0, a: 0}
+  intensityMultiplier: 0.26
+  skyColour: {r: 0.21176471, g: 0.22745098, b: 0.25882354, a: 1}
+  equatorColour: {r: 0.5, g: 0.5, b: 0.5, a: 1}
+  groundColour: {r: 0.5, g: 0.5, b: 0.5, a: 1}
+  directionalLightRotation: {x: 73.15009, y: 301.77002, z: 0}
+  directionalLight: {fileID: 0}
+  directionalLightColor: {r: 1, g: 1, b: 1, a: 1}
+  directionalLightIntensity: 0.15
+  directionalLightShadowStrength: 1
+  pointLightPosition: {x: 1.69, y: 2.1, z: 6.43}
+  pointLight: {fileID: 0}
+  pointLightColor: {r: 0, g: 0.118125916, b: 1, a: 1}
+  pointLightIntensity: 5.06
+  pointLightShadowStrength: 1
+  pointLightRange: 40.03
+  spotLightPosition: {x: 0, y: 2.33, z: 0}
+  spotLightRotation: {x: 44.80003, y: 319.44, z: 183.73}
+  spotLight: {fileID: 0}
+  spotLightColor: {r: 1, g: 0, b: 0.80021286, a: 1}
+  spotLightIntensity: 6.2
+  spotLightShadowStrength: 1
+  spotLightRange: 10
+  spotLightAngle: 130.5

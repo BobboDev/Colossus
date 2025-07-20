@@ -1,0 +1,41 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: ec070ed365df2ab429df1e24d25c635c, type: 3}
+  m_Name: Green Yellow
+  m_EditorClassIdentifier: 
+  presetname: 
+  skyboxMaterial: {fileID: 0}
+  lightingSource: 0
+  ambientColour: {r: 0.4056604, g: 0.4056604, b: 0.4056604, a: 1}
+  intensityMultiplier: 0.19
+  skyColour: {r: 0.21176471, g: 0.22745098, b: 0.25882354, a: 1}
+  equatorColour: {r: 0.8773585, g: 0.2027857, b: 0.2626903, a: 1}
+  groundColour: {r: 0.5, g: 0.5, b: 0.5, a: 1}
+  directionalLightRotation: {x: 60.45, y: 325.1, z: 0.000027698406}
+  directionalLight: {fileID: 0}
+  directionalLightColor: {r: 0, g: 0.40600348, b: 1, a: 1}
+  directionalLightIntensity: 0.55
+  directionalLightShadowStrength: 1
+  pointLightPosition: {x: -0.12, y: -0.14, z: -0.5}
+  pointLight: {fileID: 0}
+  pointLightColor: {r: 1, g: 0, b: 0.22962761, a: 1}
+  pointLightIntensity: 2.1
+  pointLightShadowStrength: 0.49
+  pointLightRange: 5.63
+  spotLightPosition: {x: 0, y: 2.1, z: 0}
+  spotLightRotation: {x: 40.000004, y: 288.7, z: -0.0000022290449}
+  spotLight: {fileID: 0}
+  spotLightColor: {r: 0.9311938, g: 1, b: 0, a: 1}
+  spotLightIntensity: 2.64
+  spotLightShadowStrength: 1
+  spotLightRange: 10
+  spotLightAngle: 62.52
