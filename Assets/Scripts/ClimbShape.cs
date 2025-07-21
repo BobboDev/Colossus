@@ -57,7 +57,7 @@ public class ClimbShape : MonoBehaviour
 
     [Header("Triangle Indexing")]
     int currentTriangleIndex;
-    int lastIndex;
+    int lastTriangleIndex;
     int previousIndex;
     int previousLastIndex;
 
@@ -73,7 +73,7 @@ public class ClimbShape : MonoBehaviour
     // 📏 EDGE TRACKING
 
     [Header("Edge Tracking")]
-    EdgePoints currentEdge = new();
+    EdgePoints currentEdgePoints = new();
     EdgePoints lastEdge = new();
 
 
@@ -163,7 +163,7 @@ public class ClimbShape : MonoBehaviour
 
             // calculate movement on the mesh based on input
             Travel(tempInput, false, false);
-            Vector3 pointOnTriangle = _cm.GetPositionFromBarycentric(barycentricCoordinate, currentEdge.Start, currentEdge.End, currentEdge.Other);
+            Vector3 pointOnTriangle = _cm.GetPositionFromBarycentric(barycentricCoordinate, currentEdgePoints.Start, currentEdgePoints.End, currentEdgePoints.Other);
             transform.position = pointOnTriangle;
 
             int depenetrationIterations = 1;
@@ -176,7 +176,7 @@ public class ClimbShape : MonoBehaviour
             }
 
             // Get the new deformed position of the player based on the vertex and barycentric coordinate that was calculated in the last loop
-            pointOnTriangle = _cm.GetPositionFromBarycentric(barycentricCoordinate, currentEdge.Start, currentEdge.End, currentEdge.Other);
+            pointOnTriangle = _cm.GetPositionFromBarycentric(barycentricCoordinate, currentEdgePoints.Start, currentEdgePoints.End, currentEdgePoints.Other);
             transform.position = pointOnTriangle;
         }
     }
@@ -188,17 +188,17 @@ public class ClimbShape : MonoBehaviour
 
     void SetEdges(Vector3 previousLastEdgeStartPosition, Vector3 previousLastEdgeEndPosition, Vector3 previousLastEdgeOtherPosition, int index)
     {
-        currentEdge.Start = _cm.Triangles
+        currentEdgePoints.Start = _cm.Triangles
                             .Skip(index)
                             .Take(3)
                             .FirstOrDefault(tri => _cm.Vertices[tri] == previousLastEdgeStartPosition);
 
-        currentEdge.End = _cm.Triangles
+        currentEdgePoints.End = _cm.Triangles
                             .Skip(index)
                             .Take(3)
                             .FirstOrDefault(tri => _cm.Vertices[tri] == previousLastEdgeEndPosition);
 
-        currentEdge.Other = _cm.Triangles
+        currentEdgePoints.Other = _cm.Triangles
                             .Skip(index)
                             .Take(3)
                             .FirstOrDefault(tri => _cm.Vertices[tri] == previousLastEdgeOtherPosition);
@@ -207,15 +207,15 @@ public class ClimbShape : MonoBehaviour
     void Travel(Vector3 direction, bool depenetratePass, bool isFinalPass)
     {
         // Get the new deformed position of the player based on the vertex and barycentric coordinate that was calculated in the last loop
-        Vector3 pointOnTriangle = _cm.GetPositionFromBarycentric(barycentricCoordinate, currentEdge.Start, currentEdge.End, currentEdge.Other);
+        Vector3 pointOnTriangle = _cm.GetPositionFromBarycentric(barycentricCoordinate, currentEdgePoints.Start, currentEdgePoints.End, currentEdgePoints.Other);
         // At the end of last loop we do a 'test' cut to get the next position BEHIND
         // This is recorded from the tri center
-        Vector3 behindPointOnTriangle = _cm.GetPositionFromBarycentric(barycentricCoordinateBehind, currentEdge.Start, currentEdge.End, currentEdge.Other);
+        Vector3 behindPointOnTriangle = _cm.GetPositionFromBarycentric(barycentricCoordinateBehind, currentEdgePoints.Start, currentEdgePoints.End, currentEdgePoints.Other);
         // Quaternion rotationLast = transform.rotation;
         // At the end of last loop we do a 'test' cut to get the next position in FRONT
         // Here we recalculate it with deformations. This is the forward cut, NOT the movement direction cut 
         // This is also recorded from the tri center
-        Vector3 forwardPointOnTriangle = _cm.GetPositionFromBarycentric(lastBarycentricCoordinate, currentEdge.Start, currentEdge.End, currentEdge.Other);
+        Vector3 forwardPointOnTriangle = _cm.GetPositionFromBarycentric(lastBarycentricCoordinate, currentEdgePoints.Start, currentEdgePoints.End, currentEdgePoints.Other);
 
         transform.position = pointOnTriangle;
 
@@ -226,9 +226,9 @@ public class ClimbShape : MonoBehaviour
         {
             if (movementMode != MovementMode.Car)
             {
-                Vector3 previousLastEdgeStartPosition = _cm.Vertices[currentEdge.Start];
-                Vector3 previousLastEdgeEndPosition = _cm.Vertices[currentEdge.End];
-                Vector3 previousLastEdgeOtherPosition = _cm.Vertices[currentEdge.Other];
+                Vector3 previousLastEdgeStartPosition = _cm.Vertices[currentEdgePoints.Start];
+                Vector3 previousLastEdgeEndPosition = _cm.Vertices[currentEdgePoints.End];
+                Vector3 previousLastEdgeOtherPosition = _cm.Vertices[currentEdgePoints.Other];
 
                 int indexTemp = _cm.GetArea(currentTriangleIndex / 3) * 3;
 
@@ -237,16 +237,16 @@ public class ClimbShape : MonoBehaviour
                     currentTriangleIndex = indexTemp;
                     SetEdges(previousLastEdgeStartPosition, previousLastEdgeEndPosition, previousLastEdgeOtherPosition, currentTriangleIndex);
 
-                    Vector3 triCenterTemp = (_cm.Vertices[currentEdge.Start] + _cm.Vertices[currentEdge.End] + _cm.Vertices[currentEdge.Other]) / 3;
+                    Vector3 triCenterTemp = (_cm.Vertices[currentEdgePoints.Start] + _cm.Vertices[currentEdgePoints.End] + _cm.Vertices[currentEdgePoints.Other]) / 3;
 
                     Plane plane = new Plane(-transform.right, triCenterTemp);
 
-                    barycentricCoordinate = Mathf2.GetBarycentricCoordinates(newPosition, _cm.Vertices[currentEdge.Start], _cm.Vertices[currentEdge.End], _cm.Vertices[currentEdge.Other]);
+                    barycentricCoordinate = Mathf2.GetBarycentricCoordinates(newPosition, _cm.Vertices[currentEdgePoints.Start], _cm.Vertices[currentEdgePoints.End], _cm.Vertices[currentEdgePoints.Other]);
 
-                    testCut = GetNextCut(currentEdge, transform.forward, triCenterTemp, plane, CutType.Start);
-                    lastBarycentricCoordinate = Mathf2.GetBarycentricCoordinates(testCut, _cm.Vertices[currentEdge.Start], _cm.Vertices[currentEdge.End], _cm.Vertices[currentEdge.Other]);
-                    testCut = GetNextCut(currentEdge, -transform.forward, triCenterTemp, plane, CutType.Test);
-                    barycentricCoordinateBehind = Mathf2.GetBarycentricCoordinates(testCut, _cm.Vertices[currentEdge.Start], _cm.Vertices[currentEdge.End], _cm.Vertices[currentEdge.Other]);
+                    testCut = GetNextCut(currentEdgePoints, transform.forward, triCenterTemp, plane, CutType.Start);
+                    lastBarycentricCoordinate = Mathf2.GetBarycentricCoordinates(testCut, _cm.Vertices[currentEdgePoints.Start], _cm.Vertices[currentEdgePoints.End], _cm.Vertices[currentEdgePoints.Other]);
+                    testCut = GetNextCut(currentEdgePoints, -transform.forward, triCenterTemp, plane, CutType.Test);
+                    barycentricCoordinateBehind = Mathf2.GetBarycentricCoordinates(testCut, _cm.Vertices[currentEdgePoints.Start], _cm.Vertices[currentEdgePoints.End], _cm.Vertices[currentEdgePoints.Other]);
 
                     movementMode = MovementMode.Car;
                 }
@@ -256,9 +256,9 @@ public class ClimbShape : MonoBehaviour
         {
             if (movementMode != MovementMode.Directional)
             {
-                Vector3 previousLastEdgeStartPosition = _cm.Vertices[currentEdge.Start];
-                Vector3 previousLastEdgeEndPosition = _cm.Vertices[currentEdge.End];
-                Vector3 previousLastEdgeOtherPosition = _cm.Vertices[currentEdge.Other];
+                Vector3 previousLastEdgeStartPosition = _cm.Vertices[currentEdgePoints.Start];
+                Vector3 previousLastEdgeEndPosition = _cm.Vertices[currentEdgePoints.End];
+                Vector3 previousLastEdgeOtherPosition = _cm.Vertices[currentEdgePoints.Other];
 
                 int indexTemp = _cm.GetMainBody(currentTriangleIndex / 3) * 3;
 
@@ -270,14 +270,14 @@ public class ClimbShape : MonoBehaviour
                     onEdge = false;
 
                     SetEdges(previousLastEdgeStartPosition, previousLastEdgeEndPosition, previousLastEdgeOtherPosition, currentTriangleIndex);
-                    Vector3 triCenterTemp = (_cm.Vertices[currentEdge.Start] + _cm.Vertices[currentEdge.End] + _cm.Vertices[currentEdge.Other]) / 3;
+                    Vector3 triCenterTemp = (_cm.Vertices[currentEdgePoints.Start] + _cm.Vertices[currentEdgePoints.End] + _cm.Vertices[currentEdgePoints.Other]) / 3;
 
                     Plane plane = new Plane(-transform.right, triCenterTemp);
 
-                    testCut = GetNextCut(currentEdge, transform.forward, triCenterTemp, plane, CutType.Start);
-                    lastBarycentricCoordinate = Mathf2.GetBarycentricCoordinates(testCut, _cm.Vertices[currentEdge.Start], _cm.Vertices[currentEdge.End], _cm.Vertices[currentEdge.Other]);
-                    testCut = GetNextCut(currentEdge, -transform.forward, triCenterTemp, plane, CutType.Test);
-                    barycentricCoordinateBehind = Mathf2.GetBarycentricCoordinates(testCut, _cm.Vertices[currentEdge.Start], _cm.Vertices[currentEdge.End], _cm.Vertices[currentEdge.Other]);
+                    testCut = GetNextCut(currentEdgePoints, transform.forward, triCenterTemp, plane, CutType.Start);
+                    lastBarycentricCoordinate = Mathf2.GetBarycentricCoordinates(testCut, _cm.Vertices[currentEdgePoints.Start], _cm.Vertices[currentEdgePoints.End], _cm.Vertices[currentEdgePoints.Other]);
+                    testCut = GetNextCut(currentEdgePoints, -transform.forward, triCenterTemp, plane, CutType.Test);
+                    barycentricCoordinateBehind = Mathf2.GetBarycentricCoordinates(testCut, _cm.Vertices[currentEdgePoints.Start], _cm.Vertices[currentEdgePoints.End], _cm.Vertices[currentEdgePoints.Other]);
 
                     movementMode = MovementMode.Directional;
                 }
@@ -305,19 +305,19 @@ public class ClimbShape : MonoBehaviour
 
         foreach (Edge e in _cm.TriangleInfos[currentTriangleIndex].edges)
         {
-            if (_cm.Vertices[e.pointA] == _cm.Vertices[currentEdge.Start])
+            if (_cm.Vertices[e.pointA] == _cm.Vertices[currentEdgePoints.Start])
                 lastEdgeStartReal = e.pointA;
-            else if (_cm.Vertices[e.pointB] == _cm.Vertices[currentEdge.Start])
+            else if (_cm.Vertices[e.pointB] == _cm.Vertices[currentEdgePoints.Start])
                 lastEdgeStartReal = e.pointB;
 
-            if (_cm.Vertices[e.pointA] == _cm.Vertices[currentEdge.End])
+            if (_cm.Vertices[e.pointA] == _cm.Vertices[currentEdgePoints.End])
                 lastEdgeEndReal = e.pointA;
-            else if (_cm.Vertices[e.pointB] == _cm.Vertices[currentEdge.End])
+            else if (_cm.Vertices[e.pointB] == _cm.Vertices[currentEdgePoints.End])
                 lastEdgeEndReal = e.pointB;
 
-            if (_cm.Vertices[e.pointA] == _cm.Vertices[currentEdge.Other])
+            if (_cm.Vertices[e.pointA] == _cm.Vertices[currentEdgePoints.Other])
                 lastEdgeOtherReal = e.pointA;
-            else if (_cm.Vertices[e.pointB] == _cm.Vertices[currentEdge.Other])
+            else if (_cm.Vertices[e.pointB] == _cm.Vertices[currentEdgePoints.Other])
                 lastEdgeOtherReal = e.pointB;
         }
 
@@ -349,8 +349,8 @@ public class ClimbShape : MonoBehaviour
         }
 
         // Get the direction towards the edge 
-        Vector3 triCenter = (_cm.Vertices[currentEdge.Start] + _cm.Vertices[currentEdge.End] + _cm.Vertices[currentEdge.Other]) / 3;
-        Vector3 closestPointOnEdge = Mathf2.NearestPointOnLine(_cm.Vertices[currentEdge.Start], (_cm.Vertices[currentEdge.Start] - _cm.Vertices[currentEdge.End]).normalized, triCenter);
+        Vector3 triCenter = (_cm.Vertices[currentEdgePoints.Start] + _cm.Vertices[currentEdgePoints.End] + _cm.Vertices[currentEdgePoints.Other]) / 3;
+        Vector3 closestPointOnEdge = Mathf2.NearestPointOnLine(_cm.Vertices[currentEdgePoints.Start], (_cm.Vertices[currentEdgePoints.Start] - _cm.Vertices[currentEdgePoints.End]).normalized, triCenter);
         Vector3 getNewtempForwardDirection = Vector3.zero;
         Vector3 getNewtempForwardDirectionBehind = Vector3.zero;
 
@@ -372,8 +372,8 @@ public class ClimbShape : MonoBehaviour
                 }
                 Plane NewtempForwardPlane = new Plane(Quaternion.FromToRotation(Vector3.up, groundNormal) * CharacterModel.right, transform.position);
                 Vector3 PlaneNormalRight = Mathf2.RotateAroundAxis(NewtempForwardPlane.normal, groundNormal, 90);
-                getNewtempForwardDirection = GetNextCut(currentEdge, PlaneNormalRight, transform.position, NewtempForwardPlane, CutType.Test);
-                getNewtempForwardDirectionBehind = GetNextCut(currentEdge, -PlaneNormalRight, transform.position, NewtempForwardPlane, CutType.Test);
+                getNewtempForwardDirection = GetNextCut(currentEdgePoints, PlaneNormalRight, transform.position, NewtempForwardPlane, CutType.Test);
+                getNewtempForwardDirectionBehind = GetNextCut(currentEdgePoints, -PlaneNormalRight, transform.position, NewtempForwardPlane, CutType.Test);
 
                 getNewtempForwardDirection = (getNewtempForwardDirection - getNewtempForwardDirectionBehind).normalized;
                 tempForward = getNewtempForwardDirection;
@@ -503,11 +503,11 @@ public class ClimbShape : MonoBehaviour
 
         if (!onEdge)
         {
-            cut = GetNextCut(currentEdge, newDirection, transform.position, plane, CutType.Start);
+            cut = GetNextCut(currentEdgePoints, newDirection, transform.position, plane, CutType.Start);
         }
         else // else do a test cut - test cut considers all edges and returns a "cut" but doesn't change the current edge/index information. this is good because we want to be able to get an edge we are standing directly on.
         {
-            cut = GetNextCut(currentEdge, newDirection, transform.position, plane, CutType.Test);
+            cut = GetNextCut(currentEdgePoints, newDirection, transform.position, plane, CutType.Test);
         }
 
         // Add to the total distance to the cut from the position
@@ -536,7 +536,7 @@ public class ClimbShape : MonoBehaviour
         // Why do we need lastIndex, previousLastIndex and previousIndex?
 
         previousLastIndex = currentTriangleIndex;
-        lastEdge.SetEdges(currentEdge.Start, currentEdge.End, currentEdge.Other);
+        lastEdge.SetEdges(currentEdgePoints.Start, currentEdgePoints.End, currentEdgePoints.Other);
 
         // while we have checked less distance than the edge
         while (totalDistanceChecked < distance)
@@ -545,13 +545,13 @@ public class ClimbShape : MonoBehaviour
             if (!onEdge)
             {
                 // set the last index to be the index - this is because we're about to check the next tri to see if we're on an edge, and we want to compare index to lastIndex
-                lastIndex = currentTriangleIndex;
+                lastTriangleIndex = currentTriangleIndex;
 
                 // take the edge we just passed, then get the tri that we didn't just check
                 // don't worry, index is set inGetNextTri() 
-                EdgePoints nextTri = _cm.GetNextTri(ref currentTriangleIndex, currentEdge.Start, currentEdge.End);
+                EdgePoints nextTri = _cm.GetNextTri(ref currentTriangleIndex, currentEdgePoints.Start, currentEdgePoints.End);
                 // if GetNextTri() returns same value as index, we are on an edge, else do nothing
-                if (currentTriangleIndex == lastIndex)
+                if (currentTriangleIndex == lastTriangleIndex)
                 {
                     onEdge = true;
                     Debug.Log(onEdge);
@@ -561,7 +561,7 @@ public class ClimbShape : MonoBehaviour
                     cutFound = false;
                     Vector3 lastCut = cut;
 
-                    cut = GetNextCut(nextTri, newDirection, newPosition, plane, CutType.Next);
+                    cut = GetNextCut(nextTri, newDirection, newPosition, plane, CutType.NextTriangle);
 
                     totalDistanceChecked += Vector3.Distance(currentCheckPosition, cut);
 
@@ -593,9 +593,9 @@ public class ClimbShape : MonoBehaviour
                     i++;
                     if (i > 100)
                     {
-                        currentEdge.Start = lastEdge.Start;
-                        currentEdge.End = lastEdge.End;
-                        currentEdge.Other = lastEdge.Other;
+                        currentEdgePoints.Start = lastEdge.Start;
+                        currentEdgePoints.End = lastEdge.End;
+                        currentEdgePoints.Other = lastEdge.Other;
                         currentTriangleIndex = previousLastIndex;
                         totalDistanceChecked = distance;
 
@@ -610,18 +610,18 @@ public class ClimbShape : MonoBehaviour
             {
                 // get the point where the character is trying to move, if it moved off the current tri into space
                 Vector3 movePositionAttempt = newPosition + newDirection * remainingDistance;
-                Vector3 slidePoint = Mathf2.GetClosestPointOnFiniteLine(movePositionAttempt, _cm.Vertices[currentEdge.Start], _cm.Vertices[currentEdge.End]);
+                Vector3 slidePoint = Mathf2.GetClosestPointOnFiniteLine(movePositionAttempt, _cm.Vertices[currentEdgePoints.Start], _cm.Vertices[currentEdgePoints.End]);
                 int currentCornerInt = -1;
                 int currentCornerIntOther = 0;
-                if (slidePoint == _cm.Vertices[currentEdge.Start])
+                if (slidePoint == _cm.Vertices[currentEdgePoints.Start])
                 {
-                    currentCornerInt = currentEdge.Start;
-                    currentCornerIntOther = currentEdge.End;
+                    currentCornerInt = currentEdgePoints.Start;
+                    currentCornerIntOther = currentEdgePoints.End;
                 }
-                if (slidePoint == _cm.Vertices[currentEdge.End])
+                if (slidePoint == _cm.Vertices[currentEdgePoints.End])
                 {
-                    currentCornerInt = currentEdge.End;
-                    currentCornerIntOther = currentEdge.Start;
+                    currentCornerInt = currentEdgePoints.End;
+                    currentCornerIntOther = currentEdgePoints.Start;
                 }
 
                 // if we reached a corner
@@ -629,20 +629,20 @@ public class ClimbShape : MonoBehaviour
                 {
                     // Get the next edge. Since lastEdge.Start and lastEdge.End are always the ouside edge when edge-sliding, the next edge is the corner reached -> lastEdgeOther
                     Edge nextEdgeOnThisTriangle = new Edge();
-                    if (currentCornerInt < currentEdge.Other)
+                    if (currentCornerInt < currentEdgePoints.Other)
                     {
                         nextEdgeOnThisTriangle.pointA = currentCornerInt;
-                        nextEdgeOnThisTriangle.pointB = currentEdge.Other;
+                        nextEdgeOnThisTriangle.pointB = currentEdgePoints.Other;
                     }
                     else
                     {
-                        nextEdgeOnThisTriangle.pointA = currentEdge.Other;
+                        nextEdgeOnThisTriangle.pointA = currentEdgePoints.Other;
                         nextEdgeOnThisTriangle.pointB = currentCornerInt;
                     }
                     // If the next edge is another outside edge on the same triangle, switch to that. 
                     if (_cm.edgeInfos.ContainsKey(nextEdgeOnThisTriangle) && nextEdgeOnThisTriangle.EdgeIsOutsideEdge())
                     {
-                        currentEdge.SetEdges(nextEdgeOnThisTriangle.pointA, currentCornerIntOther, nextEdgeOnThisTriangle.pointB);
+                        currentEdgePoints.SetEdges(nextEdgeOnThisTriangle.pointA, currentCornerIntOther, nextEdgeOnThisTriangle.pointB);
 
                         Ray tempRay = CreateRay(newPosition, movePositionAttempt);
                         Plane tempPlane = new Plane((slidePoint - newPosition).normalized, slidePoint);
@@ -673,13 +673,13 @@ public class ClimbShape : MonoBehaviour
                             totalDistanceChecked += hitDistance;
                         }
 
-                        if (slidePoint == _cm.Vertices[currentEdge.Start])
+                        if (slidePoint == _cm.Vertices[currentEdgePoints.Start])
                         {
-                            indexOfCornerReached = currentEdge.Start;
+                            indexOfCornerReached = currentEdgePoints.Start;
                         }
-                        else if (slidePoint == _cm.Vertices[currentEdge.End])
+                        else if (slidePoint == _cm.Vertices[currentEdgePoints.End])
                         {
-                            indexOfCornerReached = currentEdge.End;
+                            indexOfCornerReached = currentEdgePoints.End;
                         }
 
                         int timesLooped = 0;
@@ -708,7 +708,7 @@ public class ClimbShape : MonoBehaviour
 
                         List<Edge> previouslyCheckedEdges = new List<Edge>();
                         Edge lastEdgePassedReal = _cm.GetEdgeFromVertexIndices(lastEdgeStartReal, lastEdgeEndReal);
-                        Edge lastEdgePassed = _cm.GetEdgeFromVertexIndices(currentEdge.Start, currentEdge.End);
+                        Edge lastEdgePassed = _cm.GetEdgeFromVertexIndices(currentEdgePoints.Start, currentEdgePoints.End);
 
                         // WARNING - changed from using lastEdge.Start and lastEdge.End to lastEdgeStartRealTemp and lastEdgeEndRealTemp. Could cause issues.
 
@@ -754,16 +754,16 @@ public class ClimbShape : MonoBehaviour
 
                                 if (_cm.Vertices[cornerWall.pointA] == _cm.Vertices[indexOfCornerReached])
                                 {
-                                    currentEdge.End = cornerWall.pointA;
-                                    currentEdge.Start = cornerWall.pointB;
+                                    currentEdgePoints.End = cornerWall.pointA;
+                                    currentEdgePoints.Start = cornerWall.pointB;
                                 }
                                 else if (_cm.Vertices[cornerWall.pointB] == _cm.Vertices[indexOfCornerReached])
                                 {
-                                    currentEdge.End = cornerWall.pointB;
-                                    currentEdge.Start = cornerWall.pointA;
+                                    currentEdgePoints.End = cornerWall.pointB;
+                                    currentEdgePoints.Start = cornerWall.pointA;
                                 }
 
-                                currentEdge.Other = cornerEdgeOther2;
+                                currentEdgePoints.Other = cornerEdgeOther2;
                             }
                         }
 
@@ -789,7 +789,7 @@ public class ClimbShape : MonoBehaviour
                         bool foundNextEdge = false;
                         int x = 0;
                         int tempIndex = currentTriangleIndex;
-                        int tempLastIndex = lastIndex;
+                        int tempLastIndex = lastTriangleIndex;
 
                         List<Edge> checkedEdges = new List<Edge>();
                         List<Edge> checkedEdgesCorner = new List<Edge>();
@@ -928,40 +928,40 @@ public class ClimbShape : MonoBehaviour
                                     if (_cm.edgeInfos[e].triangleA == _cm.edgeInfos[e].triangleB)
                                     {
                                         foundNextEdge = true;
-                                        previousLastIndex = lastIndex;
+                                        previousLastIndex = lastTriangleIndex;
                                         previousIndex = currentTriangleIndex;
 
-                                        lastEdge.Start = currentEdge.Start;
-                                        lastEdge.End = currentEdge.End;
-                                        lastEdge.Other = currentEdge.Other;
+                                        lastEdge.Start = currentEdgePoints.Start;
+                                        lastEdge.End = currentEdgePoints.End;
+                                        lastEdge.Other = currentEdgePoints.Other;
 
-                                        currentEdge.Start = e.pointA;
-                                        currentEdge.End = e.pointB;
+                                        currentEdgePoints.Start = e.pointA;
+                                        currentEdgePoints.End = e.pointB;
 
-                                        lastIndex = tempLastIndex;
+                                        lastTriangleIndex = tempLastIndex;
                                         currentTriangleIndex = tempIndex;
 
                                         foreach (Edge p in _cm.TriangleInfos[currentTriangleIndex].edges)
                                         {
-                                            if (_cm.Vertices[p.pointA] != _cm.Vertices[currentEdge.Start] && _cm.Vertices[p.pointA] != _cm.Vertices[currentEdge.End])
+                                            if (_cm.Vertices[p.pointA] != _cm.Vertices[currentEdgePoints.Start] && _cm.Vertices[p.pointA] != _cm.Vertices[currentEdgePoints.End])
                                             {
-                                                currentEdge.Other = p.pointA;
+                                                currentEdgePoints.Other = p.pointA;
                                             }
-                                            else if (_cm.Vertices[p.pointB] != _cm.Vertices[currentEdge.Start] && _cm.Vertices[p.pointB] != _cm.Vertices[currentEdge.End])
+                                            else if (_cm.Vertices[p.pointB] != _cm.Vertices[currentEdgePoints.Start] && _cm.Vertices[p.pointB] != _cm.Vertices[currentEdgePoints.End])
                                             {
-                                                currentEdge.Other = p.pointB;
+                                                currentEdgePoints.Other = p.pointB;
                                             }
                                         }
 
-                                        triCenter = (_cm.Vertices[currentEdge.Start] + _cm.Vertices[currentEdge.End] + _cm.Vertices[currentEdge.Other]) / 3;
-                                        closestPointOnEdge = Mathf2.NearestPointOnLine(_cm.Vertices[currentEdge.Start], (_cm.Vertices[currentEdge.Start] - _cm.Vertices[currentEdge.End]).normalized, triCenter);
+                                        triCenter = (_cm.Vertices[currentEdgePoints.Start] + _cm.Vertices[currentEdgePoints.End] + _cm.Vertices[currentEdgePoints.Other]) / 3;
+                                        closestPointOnEdge = Mathf2.NearestPointOnLine(_cm.Vertices[currentEdgePoints.Start], (_cm.Vertices[currentEdgePoints.Start] - _cm.Vertices[currentEdgePoints.End]).normalized, triCenter);
 
                                         Vector3 previousTriCenter = (_cm.Vertices[lastEdge.Start] + _cm.Vertices[lastEdge.End] + _cm.Vertices[lastEdge.Other]) / 3;
                                         Vector3 previousClosestPointOnEdge = Mathf2.NearestPointOnLine(_cm.Vertices[lastEdge.Start], (_cm.Vertices[lastEdge.Start] - _cm.Vertices[lastEdge.End]).normalized, previousTriCenter);
 
                                         newPosition = slidePoint;
 
-                                        Vector3 cornerNormal = Vector3.Cross(_cm.Vertices[lastEdge.Start] - _cm.Vertices[lastEdge.End], _cm.Vertices[currentEdge.Start] - _cm.Vertices[currentEdge.End]).normalized;
+                                        Vector3 cornerNormal = Vector3.Cross(_cm.Vertices[lastEdge.Start] - _cm.Vertices[lastEdge.End], _cm.Vertices[currentEdgePoints.Start] - _cm.Vertices[currentEdgePoints.End]).normalized;
                                         if (Vector3.Dot(cornerNormal, transform.up) < 0)
                                         {
                                             cornerNormal = -cornerNormal;
@@ -969,7 +969,7 @@ public class ClimbShape : MonoBehaviour
                                         Vector3 newEdgeNormal = (closestPointOnEdge - triCenter).normalized;
                                         Vector3 lastEdgeNormal = (previousClosestPointOnEdge - previousTriCenter).normalized;
 
-                                        Vector3 newFarCorner = _cm.Vertices[currentCornerInt] == _cm.Vertices[currentEdge.Start] ? _cm.Vertices[currentEdge.End] : _cm.Vertices[currentEdge.Start];
+                                        Vector3 newFarCorner = _cm.Vertices[currentCornerInt] == _cm.Vertices[currentEdgePoints.Start] ? _cm.Vertices[currentEdgePoints.End] : _cm.Vertices[currentEdgePoints.Start];
                                         Vector3 lastFarCorner = _cm.Vertices[currentCornerInt] == _cm.Vertices[lastEdge.Start] ? _cm.Vertices[lastEdge.End] : _cm.Vertices[lastEdge.Start];
 
                                         int shouldInvertNewEdgeNormal = 1;
@@ -1007,13 +1007,13 @@ public class ClimbShape : MonoBehaviour
                                         {
                                             // NOT SWITCHING TO OTHER EDGE SO OF COURSE SLIDEPOINT IS STILL AT THE CORNER
                                             onEdge = true;
-                                            currentEdge.Start = lastEdge.Start;
-                                            currentEdge.End = lastEdge.End;
-                                            currentEdge.Other = lastEdge.Other;
+                                            currentEdgePoints.Start = lastEdge.Start;
+                                            currentEdgePoints.End = lastEdge.End;
+                                            currentEdgePoints.Other = lastEdge.Other;
 
                                             currentTriangleIndex = previousIndex;
 
-                                            lastIndex = previousLastIndex;
+                                            lastTriangleIndex = previousLastIndex;
                                             totalDistanceChecked = distance;
                                             newPosition = slidePoint;
                                             slidePoint = _cm.Vertices[indexOfCornerReached];
@@ -1064,8 +1064,8 @@ public class ClimbShape : MonoBehaviour
                                         if (GetFarEdgeCut(indexOfCornerReached, tempIndex, nextTriLastEdge.Start, nextTriLastEdge.End, nextTriLastEdge.Other, cornerEdgeStart, cornerEdgeEnd, cornerEdgeOther, plane))
                                         {
                                             currentTriangleIndex = tempIndex;
-                                            lastIndex = tempLastIndex;
-                                            currentEdge.SetEdges(nextTriLastEdge.End, nextTriLastEdge.Start, nextTriLastEdge.Other);
+                                            lastTriangleIndex = tempLastIndex;
+                                            currentEdgePoints.SetEdges(nextTriLastEdge.End, nextTriLastEdge.Start, nextTriLastEdge.Other);
 
                                             onEdge = false;
 
@@ -1113,25 +1113,25 @@ public class ClimbShape : MonoBehaviour
             }
         }
 
-        barycentricCoordinate = Mathf2.GetBarycentricCoordinates(newPosition, _cm.Vertices[currentEdge.Start], _cm.Vertices[currentEdge.End], _cm.Vertices[currentEdge.Other]);
+        barycentricCoordinate = Mathf2.GetBarycentricCoordinates(newPosition, _cm.Vertices[currentEdgePoints.Start], _cm.Vertices[currentEdgePoints.End], _cm.Vertices[currentEdgePoints.Other]);
 
-        triCenter = (_cm.Vertices[currentEdge.Start] + _cm.Vertices[currentEdge.End] + _cm.Vertices[currentEdge.Other]) / 3;
+        triCenter = (_cm.Vertices[currentEdgePoints.Start] + _cm.Vertices[currentEdgePoints.End] + _cm.Vertices[currentEdgePoints.Other]) / 3;
 
         foreach (Edge e in _cm.TriangleInfos[currentTriangleIndex].edges)
         {
-            if (_cm.Vertices[e.pointA] == _cm.Vertices[currentEdge.Start])
+            if (_cm.Vertices[e.pointA] == _cm.Vertices[currentEdgePoints.Start])
                 lastEdgeStartReal = e.pointA;
-            else if (_cm.Vertices[e.pointB] == _cm.Vertices[currentEdge.Start])
+            else if (_cm.Vertices[e.pointB] == _cm.Vertices[currentEdgePoints.Start])
                 lastEdgeStartReal = e.pointB;
 
-            if (_cm.Vertices[e.pointA] == _cm.Vertices[currentEdge.End])
+            if (_cm.Vertices[e.pointA] == _cm.Vertices[currentEdgePoints.End])
                 lastEdgeEndReal = e.pointA;
-            else if (_cm.Vertices[e.pointB] == _cm.Vertices[currentEdge.End])
+            else if (_cm.Vertices[e.pointB] == _cm.Vertices[currentEdgePoints.End])
                 lastEdgeEndReal = e.pointB;
 
-            if (_cm.Vertices[e.pointA] == _cm.Vertices[currentEdge.Other])
+            if (_cm.Vertices[e.pointA] == _cm.Vertices[currentEdgePoints.Other])
                 lastEdgeOtherReal = e.pointA;
-            else if (_cm.Vertices[e.pointB] == _cm.Vertices[currentEdge.Other])
+            else if (_cm.Vertices[e.pointB] == _cm.Vertices[currentEdgePoints.Other])
                 lastEdgeOtherReal = e.pointB;
         }
 
@@ -1152,12 +1152,12 @@ public class ClimbShape : MonoBehaviour
                 testPlane = new Plane(-CharacterModel.right, triCenter);
         }
         testCut = Vector3.zero;
-        testCut = GetNextCut(currentEdge, castDirectionTest, triCenter, testPlane, CutType.Test);
+        testCut = GetNextCut(currentEdgePoints, castDirectionTest, triCenter, testPlane, CutType.Test);
 
         // Get the barycentric coordinate of the place that would have pointed forward, for next time - recalculating animation
-        lastBarycentricCoordinate = Mathf2.GetBarycentricCoordinates(testCut, _cm.Vertices[currentEdge.Start], _cm.Vertices[currentEdge.End], _cm.Vertices[currentEdge.Other]);
-        testCut = GetNextCut(currentEdge, -castDirectionTest, triCenter, testPlane, CutType.Test);
-        barycentricCoordinateBehind = Mathf2.GetBarycentricCoordinates(testCut, _cm.Vertices[currentEdge.Start], _cm.Vertices[currentEdge.End], _cm.Vertices[currentEdge.Other]);
+        lastBarycentricCoordinate = Mathf2.GetBarycentricCoordinates(testCut, _cm.Vertices[currentEdgePoints.Start], _cm.Vertices[currentEdgePoints.End], _cm.Vertices[currentEdgePoints.Other]);
+        testCut = GetNextCut(currentEdgePoints, -castDirectionTest, triCenter, testPlane, CutType.Test);
+        barycentricCoordinateBehind = Mathf2.GetBarycentricCoordinates(testCut, _cm.Vertices[currentEdgePoints.Start], _cm.Vertices[currentEdgePoints.End], _cm.Vertices[currentEdgePoints.Other]);
 
 
         if (getNewtempForwardDirection != Vector3.zero)
@@ -1176,25 +1176,25 @@ public class ClimbShape : MonoBehaviour
         int tempLastEdgeEndReal = -1;
         int tempLastEdgeOtherReal = -1;
 
-        Vector3 tempBarycentricCoordinate = Mathf2.GetBarycentricCoordinates(newPosition, _cm.Vertices[currentEdge.Start], _cm.Vertices[currentEdge.End], _cm.Vertices[currentEdge.Other]);
+        Vector3 tempBarycentricCoordinate = Mathf2.GetBarycentricCoordinates(newPosition, _cm.Vertices[currentEdgePoints.Start], _cm.Vertices[currentEdgePoints.End], _cm.Vertices[currentEdgePoints.Other]);
 
-        Vector3 tempTriCenter = (_cm.Vertices[currentEdge.Start] + _cm.Vertices[currentEdge.End] + _cm.Vertices[currentEdge.Other]) / 3;
+        Vector3 tempTriCenter = (_cm.Vertices[currentEdgePoints.Start] + _cm.Vertices[currentEdgePoints.End] + _cm.Vertices[currentEdgePoints.Other]) / 3;
 
         foreach (Edge e in _cm.TriangleInfos[currentTriangleIndex].edges)
         {
-            if (_cm.Vertices[e.pointA] == _cm.Vertices[currentEdge.Start])
+            if (_cm.Vertices[e.pointA] == _cm.Vertices[currentEdgePoints.Start])
                 tempLastEdgeStartReal = e.pointA;
-            else if (_cm.Vertices[e.pointB] == _cm.Vertices[currentEdge.Start])
+            else if (_cm.Vertices[e.pointB] == _cm.Vertices[currentEdgePoints.Start])
                 tempLastEdgeStartReal = e.pointB;
 
-            if (_cm.Vertices[e.pointA] == _cm.Vertices[currentEdge.End])
+            if (_cm.Vertices[e.pointA] == _cm.Vertices[currentEdgePoints.End])
                 tempLastEdgeEndReal = e.pointA;
-            else if (_cm.Vertices[e.pointB] == _cm.Vertices[currentEdge.End])
+            else if (_cm.Vertices[e.pointB] == _cm.Vertices[currentEdgePoints.End])
                 tempLastEdgeEndReal = e.pointB;
 
-            if (_cm.Vertices[e.pointA] == _cm.Vertices[currentEdge.Other])
+            if (_cm.Vertices[e.pointA] == _cm.Vertices[currentEdgePoints.Other])
                 tempLastEdgeOtherReal = e.pointA;
-            else if (_cm.Vertices[e.pointB] == _cm.Vertices[currentEdge.Other])
+            else if (_cm.Vertices[e.pointB] == _cm.Vertices[currentEdgePoints.Other])
                 tempLastEdgeOtherReal = e.pointB;
         }
 
@@ -1204,17 +1204,17 @@ public class ClimbShape : MonoBehaviour
 
         Plane tempTestPlane = new Plane(-(Quaternion.FromToRotation(transform.up, tempGroundNormal) * transform.right), tempTriCenter);
 
-        Vector3 tempTestCut = GetNextCut(currentEdge, tempCastDirectionTest, tempTriCenter, tempTestPlane, CutType.Test);
+        Vector3 tempTestCut = GetNextCut(currentEdgePoints, tempCastDirectionTest, tempTriCenter, tempTestPlane, CutType.Test);
 
         // Get the barycentric coordinate of the place that would have pointed forward, for next time - recalculating animation
-        Vector3 tempLastBarycentricCoordinate = Mathf2.GetBarycentricCoordinates(tempTestCut, _cm.Vertices[currentEdge.Start], _cm.Vertices[currentEdge.End], _cm.Vertices[currentEdge.Other]);
-        tempTestCut = GetNextCut(currentEdge, -tempCastDirectionTest, tempTriCenter, tempTestPlane, CutType.Test);
-        Vector3 tempBarycentricCoordinateBehind = Mathf2.GetBarycentricCoordinates(tempTestCut, _cm.Vertices[currentEdge.Start], _cm.Vertices[currentEdge.End], _cm.Vertices[currentEdge.Other]);
-        Vector3 behindPointOnTriangle = _cm.GetPositionFromBarycentric(tempBarycentricCoordinateBehind, currentEdge.Start, currentEdge.End, currentEdge.Other);
+        Vector3 tempLastBarycentricCoordinate = Mathf2.GetBarycentricCoordinates(tempTestCut, _cm.Vertices[currentEdgePoints.Start], _cm.Vertices[currentEdgePoints.End], _cm.Vertices[currentEdgePoints.Other]);
+        tempTestCut = GetNextCut(currentEdgePoints, -tempCastDirectionTest, tempTriCenter, tempTestPlane, CutType.Test);
+        Vector3 tempBarycentricCoordinateBehind = Mathf2.GetBarycentricCoordinates(tempTestCut, _cm.Vertices[currentEdgePoints.Start], _cm.Vertices[currentEdgePoints.End], _cm.Vertices[currentEdgePoints.Other]);
+        Vector3 behindPointOnTriangle = _cm.GetPositionFromBarycentric(tempBarycentricCoordinateBehind, currentEdgePoints.Start, currentEdgePoints.End, currentEdgePoints.Other);
         // At the end of last loop we do a 'test' cut to get the next position in FRONT
         // Here we recalculate it with deformations. This is the forward cut, NOT the movement direction cut 
         // This is also recorded from the tri center
-        Vector3 forwardPointOnTriangle = _cm.GetPositionFromBarycentric(tempLastBarycentricCoordinate, currentEdge.Start, currentEdge.End, currentEdge.Other);
+        Vector3 forwardPointOnTriangle = _cm.GetPositionFromBarycentric(tempLastBarycentricCoordinate, currentEdgePoints.Start, currentEdgePoints.End, currentEdgePoints.Other);
 
         // Calculate the the direction towards the FORWARD facing point, NOT the movement facing point
         Vector3 tempForward = (forwardPointOnTriangle - behindPointOnTriangle).normalized;
@@ -1223,7 +1223,7 @@ public class ClimbShape : MonoBehaviour
 
         Vector3 tempMovePositionAttempt = _cm.Vertices[indexOfCornerReached] + (tempRotation * input).normalized;
 
-        Vector3 slidePoint3 = Mathf2.GetClosestPointOnFiniteLine(tempMovePositionAttempt, _cm.Vertices[currentEdge.Start], _cm.Vertices[currentEdge.End]);
+        Vector3 slidePoint3 = Mathf2.GetClosestPointOnFiniteLine(tempMovePositionAttempt, _cm.Vertices[currentEdgePoints.Start], _cm.Vertices[currentEdgePoints.End]);
         // This is for stopping the check from bouncing between edges when stuck in a corner
         // Problem is that it's sticking to corners when the GetClosestPointOnLine attemptedMovePosition is outside the line
 
@@ -1286,169 +1286,167 @@ public class ClimbShape : MonoBehaviour
         return planeHitsFarEdge;
     }
 
-    Vector3 GetNextCut(EdgePoints edgePoints, Vector3 direction, Vector3 position, Plane plane, CutType cutType)
+    Vector3 GetNextCut(EdgePoints edgePoints, Vector3 direction, Vector3 origin, Plane plane, CutType cutType)
     {
-        int p1Temp = edgePoints.Start;
-        int p2Temp = edgePoints.End;
-        int p3Temp = edgePoints.Other;
-
-        if (currentTriangleIndex != lastIndex && cutType != CutType.Test && cutType != CutType.Start)
+        // If we are on a new triangle and want to get the next triangle
+        if (currentTriangleIndex != lastTriangleIndex && cutType == CutType.NextTriangle)
         {
-            foreach (var point in new[] { edgePoints.Start, edgePoints.End, edgePoints.Other })
+            //Check each point in the next triangle’s points
+            foreach (int point in new[] { edgePoints.Start, edgePoints.End, edgePoints.Other })
             {
-                if (_cm.Vertices[point] == _cm.Vertices[currentEdge.Start]) currentEdge.Start = point;
-                else if (_cm.Vertices[point] == _cm.Vertices[currentEdge.End]) currentEdge.End = point;
-                else currentEdge.Other = point;
+                // Match Start and End with the current edge based on position
+                // Assume that the left over one is the “other”
+                if (_cm.Vertices[point] == _cm.Vertices[currentEdgePoints.Start]) currentEdgePoints.Start = point;
+                else if (_cm.Vertices[point] == _cm.Vertices[currentEdgePoints.End]) currentEdgePoints.End = point;
+                else currentEdgePoints.Other = point;
             }
+
+
+            // Since we're checking the far side, we want the edgePoints to be the start -> other, other -> end
+            // Usually we would just get the edge in front, but here, we're crossing the edge in front and then going onto the next triangle and testing the other edges
+            edgePoints.Start = currentEdgePoints.Start;
+            edgePoints.Other = currentEdgePoints.End;
+            edgePoints.End = currentEdgePoints.Other;
         }
 
-        // If we're starting or testing, we're doing so from a point within the triangle and we test all edges.
-        // Otherwise make the next p1 the START edge, p2 the OTHER edge, and p3 the END edge
-        // We do this because the edge that's about to be the one we pass can only be an other edge than the current start->end edge, so we want to be sure not to check start->end
-        if (cutType == CutType.Next && lastIndex != currentTriangleIndex)
-        {
-            var points = new[] { edgePoints.Start, edgePoints.End, edgePoints.Other };
-
-            p1Temp = points.First(p => _cm.Vertices[currentEdge.Start] == _cm.Vertices[p]);
-            p2Temp = points.First(p => _cm.Vertices[p] != _cm.Vertices[currentEdge.Start] && _cm.Vertices[p] != _cm.Vertices[currentEdge.End]);
-            p3Temp = points.First(p => _cm.Vertices[currentEdge.End] == _cm.Vertices[p]);
-        }
-
-        // create rays of edges to use with planar casts
-
-        // START >> OTHER edge
-        Ray ray1 = CreateRay(_cm.Vertices[p1Temp], _cm.Vertices[p2Temp]);
-        // END >> OTHER edge
-        Ray ray2 = CreateRay(_cm.Vertices[p2Temp], _cm.Vertices[p3Temp]);
+        // Create rays of edges to use with planar casts
         // START >> END edge
-        Ray ray3 = CreateRay(_cm.Vertices[p1Temp], _cm.Vertices[p3Temp]);
+        Ray startEndRay = CreateRay(_cm.Vertices[edgePoints.Start], _cm.Vertices[edgePoints.End]);
+        // END >> OTHER edge
+        Ray endOtherRay = CreateRay(_cm.Vertices[edgePoints.End], _cm.Vertices[edgePoints.Other]);
+        // START >> OTHER edge
+        Ray startOtherRay = CreateRay(_cm.Vertices[edgePoints.Start], _cm.Vertices[edgePoints.Other]);
 
         // record ray's lengths, since Ray.direction does not have a magnitude
-        // in order of size, because that's how edges are defined.
-        float ray1Length = Vector3.Distance(_cm.Vertices[p1Temp], _cm.Vertices[p2Temp]);
-        float ray2Length = Vector3.Distance(_cm.Vertices[p2Temp], _cm.Vertices[p3Temp]);
-        float ray3Length = Vector3.Distance(_cm.Vertices[p1Temp], _cm.Vertices[p3Temp]);
+        // In order of size, because that's how edges are defined.
+        float startEndRayLength = Vector3.Distance(_cm.Vertices[edgePoints.Start], _cm.Vertices[edgePoints.End]);
+        float endOtherRayLength = Vector3.Distance(_cm.Vertices[edgePoints.End], _cm.Vertices[edgePoints.Other]);
+        float startOtherRayLength = Vector3.Distance(_cm.Vertices[edgePoints.Start], _cm.Vertices[edgePoints.Other]);
 
-        // a variable for Plane.Raycast to store distance in
-        float hitDistance1 = -1;
-        float hitDistance2 = -1;
-        float hitDistance3 = -1;
-        // temporarily make result: position, so that if all else fails we get put back in the same spot
-        Vector3 tempResult = position;
+        // A variable for Plane.Raycast to store distance in
+        float startEndRayHitDistance = -1;
+        float endOtherRayHitDistance = -1;
+        float startOtherRayHitDistance = -1;
+        // Temporarily make result: origin, so that if all else fails we get put back in the same spot
+        Vector3 result = origin;
         // OTHER >> START edge
-        // if the edge intersects the plane...
-        plane.Raycast(ray1, out hitDistance1);
-        plane.Raycast(ray2, out hitDistance2);
-        plane.Raycast(ray3, out hitDistance3);
 
+        // Get distances along each edge that plane intersects
+        plane.Raycast(startEndRay, out startEndRayHitDistance);
+        plane.Raycast(endOtherRay, out endOtherRayHitDistance);
+        plane.Raycast(startOtherRay, out startOtherRayHitDistance);
+
+        // If this isn’t the first move since being on the mesh
         if (firstMoveDone)
         {
-            if (hitDistance1 > 0)
+            // And we hit on the positive side of the startEndRay (somewhere beyond the origin and in the direction of the ray.
+
+            if (startEndRayHitDistance > 0)
             {
                 //... and the point along the ray is within the length of the edge...
-                if (hitDistance1 <= ray1Length
-                 || hitDistance1 > ray1Length && hitDistance2 > ray2Length && hitDistance3 < ray3Length && hitDistance3 > 0
-                 || hitDistance1 > ray1Length && hitDistance3 > ray3Length && hitDistance2 < ray2Length && hitDistance2 > 0
+                if (startEndRayHitDistance <= startEndRayLength
+                 || startEndRayHitDistance > startEndRayLength && endOtherRayHitDistance > endOtherRayLength && startOtherRayHitDistance < startOtherRayLength && startOtherRayHitDistance > 0
+                 || startEndRayHitDistance > startEndRayLength && startOtherRayHitDistance > startOtherRayLength && endOtherRayHitDistance < endOtherRayLength && endOtherRayHitDistance > 0
                  )
                 {
                     // and the cut type is next or
                     // start/test AND the intersection point is in front of the player
-                    if (cutType == CutType.Next ||
+                    if (cutType == CutType.NextTriangle ||
                        ((cutType == CutType.Start || cutType == CutType.Test) &&
-                       (Vector3.Dot(direction.normalized, (position - ray1.GetPoint(hitDistance1)).normalized) <= 0
-                 || hitDistance1 > ray1Length && hitDistance2 > ray2Length && hitDistance3 < ray3Length && hitDistance3 > 0
-                 || hitDistance1 > ray1Length && hitDistance3 > ray3Length && hitDistance2 < ray2Length && hitDistance2 > 0)))
+                       (Vector3.Dot(direction.normalized, (origin - startEndRay.GetPoint(startEndRayHitDistance)).normalized) <= 0
+                 || startEndRayHitDistance > startEndRayLength && endOtherRayHitDistance > endOtherRayLength && startOtherRayHitDistance < startOtherRayLength && startOtherRayHitDistance > 0
+                 || startEndRayHitDistance > startEndRayLength && startOtherRayHitDistance > startOtherRayLength && endOtherRayHitDistance < endOtherRayLength && endOtherRayHitDistance > 0)))
                     {
-                        tempResult = ray1.GetPoint(hitDistance1);
+                        result = startEndRay.GetPoint(startEndRayHitDistance);
 
                         // if we're not just doing a test probe, return the relevant edges. The edge we're testing here is p1 to p2, so we make those start and end
                         if (cutType != CutType.Test)
                         {
-                            currentEdge.SetEdges(p1Temp, p2Temp, p3Temp);
+                            currentEdgePoints.SetEdges(edgePoints.Start, edgePoints.End, edgePoints.Other);
                         }
                     }
                 }
             }
-            else if (hitDistance1 == 0)
+            else if (startEndRayHitDistance == 0)
             {
-                if (cutType != CutType.Test && lastIndex != currentTriangleIndex)
+                if (cutType != CutType.Test && lastTriangleIndex != currentTriangleIndex)
                 {
-                    tempResult = _cm.Vertices[p1Temp];
-                    currentEdge.SetEdges(p1Temp, p2Temp, p3Temp);
+                    result = _cm.Vertices[edgePoints.Start];
+                    currentEdgePoints.SetEdges(edgePoints.Start, edgePoints.End, edgePoints.Other);
                     cutFound = true;
                 }
             }
 
             // END >> OTHER edge
-            if (hitDistance2 > 0)
+            if (endOtherRayHitDistance > 0)
             {
                 // same as last time, it shouldn't be able to hit if the last one already did
-                if (hitDistance2 <= ray2Length
-                 || hitDistance2 > ray2Length && hitDistance1 > ray1Length && hitDistance3 < ray3Length && hitDistance3 > 0
-                 || hitDistance2 > ray2Length && hitDistance3 > ray3Length && hitDistance1 < ray1Length && hitDistance1 > 0
+                if (endOtherRayHitDistance <= endOtherRayLength
+                 || endOtherRayHitDistance > endOtherRayLength && startEndRayHitDistance > startEndRayLength && startOtherRayHitDistance < startOtherRayLength && startOtherRayHitDistance > 0
+                 || endOtherRayHitDistance > endOtherRayLength && startOtherRayHitDistance > startOtherRayLength && startEndRayHitDistance < startEndRayLength && startEndRayHitDistance > 0
                  )
                 {
 
-                    if (cutType == CutType.Next ||
+                    if (cutType == CutType.NextTriangle ||
                        ((cutType == CutType.Start || cutType == CutType.Test) &&
-                       (Vector3.Dot(direction.normalized, (position - ray2.GetPoint(hitDistance2)).normalized) <= 0
-                 || hitDistance2 > ray2Length && hitDistance1 > ray1Length && hitDistance3 < ray3Length && hitDistance3 > 0
-                 || hitDistance2 > ray2Length && hitDistance3 > ray3Length && hitDistance1 < ray1Length && hitDistance1 > 0)))
+                       (Vector3.Dot(direction.normalized, (origin - endOtherRay.GetPoint(endOtherRayHitDistance)).normalized) <= 0
+                 || endOtherRayHitDistance > endOtherRayLength && startEndRayHitDistance > startEndRayLength && startOtherRayHitDistance < startOtherRayLength && startOtherRayHitDistance > 0
+                 || endOtherRayHitDistance > endOtherRayLength && startOtherRayHitDistance > startOtherRayLength && startEndRayHitDistance < startEndRayLength && startEndRayHitDistance > 0)))
                     {
-                        tempResult = ray2.GetPoint(hitDistance2);
+                        result = endOtherRay.GetPoint(endOtherRayHitDistance);
                         if (cutType != CutType.Test)
                         {
-                            currentEdge.SetEdges(p2Temp, p3Temp, p1Temp);
+                            currentEdgePoints.SetEdges(edgePoints.End, edgePoints.Other, edgePoints.Start);
                             cutFound = true;
                         }
                     }
                 }
             }
-            else if (hitDistance2 == 0 && !cutFound)
+            else if (endOtherRayHitDistance == 0 && !cutFound)
             {
-                if (cutType != CutType.Test && lastIndex != currentTriangleIndex)
+                if (cutType != CutType.Test && lastTriangleIndex != currentTriangleIndex)
                 {
-                    tempResult = _cm.Vertices[p2Temp];
-                    currentEdge.SetEdges(p2Temp, p3Temp, p1Temp);
+                    result = _cm.Vertices[edgePoints.End];
+                    currentEdgePoints.SetEdges(edgePoints.End, edgePoints.Other, edgePoints.Start);
                 }
             }
 
             // we only test the START >> END edge if it's the start of a new loop or a test because we just passed through this
-            if (hitDistance3 > 0)
+            if (startOtherRayHitDistance > 0)
             {
-                if (hitDistance3 <= ray3Length
-                 || hitDistance3 > ray3Length && hitDistance1 > ray1Length && hitDistance2 < ray2Length && hitDistance2 > 0
-                 || hitDistance3 > ray3Length && hitDistance2 > ray2Length && hitDistance1 < ray1Length && hitDistance1 > 0
+                if (startOtherRayHitDistance <= startOtherRayLength
+                 || startOtherRayHitDistance > startOtherRayLength && startEndRayHitDistance > startEndRayLength && endOtherRayHitDistance < endOtherRayLength && endOtherRayHitDistance > 0
+                 || startOtherRayHitDistance > startOtherRayLength && endOtherRayHitDistance > endOtherRayLength && startEndRayHitDistance < startEndRayLength && startEndRayHitDistance > 0
                  )
                 {
                     if ((cutType == CutType.Start || cutType == CutType.Test) && (
-                    (Vector3.Dot(direction.normalized, (position - ray3.GetPoint(hitDistance3)).normalized) <= 0
-                     || hitDistance3 > ray3Length && hitDistance1 > ray1Length && hitDistance2 < ray2Length && hitDistance2 > 0
-                     || hitDistance3 > ray3Length && hitDistance2 > ray2Length && hitDistance1 < ray1Length && hitDistance1 > 0))
+                    (Vector3.Dot(direction.normalized, (origin - startOtherRay.GetPoint(startOtherRayHitDistance)).normalized) <= 0
+                     || startOtherRayHitDistance > startOtherRayLength && startEndRayHitDistance > startEndRayLength && endOtherRayHitDistance < endOtherRayLength && endOtherRayHitDistance > 0
+                     || startOtherRayHitDistance > startOtherRayLength && endOtherRayHitDistance > endOtherRayLength && startEndRayHitDistance < startEndRayLength && startEndRayHitDistance > 0))
                     )
                     {
-                        tempResult = ray3.GetPoint(hitDistance3);
+                        result = startOtherRay.GetPoint(startOtherRayHitDistance);
                         if (cutType != CutType.Test)
                         {
-                            currentEdge.SetEdges(p1Temp, p3Temp, p2Temp);
+                            currentEdgePoints.SetEdges(edgePoints.Start, edgePoints.Other, edgePoints.End);
                             cutFound = true;
                         }
                     }
                 }
             }
-            else if (hitDistance3 == 0 && !cutFound)
+            else if (startOtherRayHitDistance == 0 && !cutFound)
             {
-                if (cutType != CutType.Test && lastIndex != currentTriangleIndex)
+                if (cutType != CutType.Test && lastTriangleIndex != currentTriangleIndex)
                 {
-                    tempResult = _cm.Vertices[p1Temp];
-                    currentEdge.SetEdges(p1Temp, p3Temp, p2Temp);
+                    result = _cm.Vertices[edgePoints.Start];
+                    currentEdgePoints.SetEdges(edgePoints.Start, edgePoints.Other, edgePoints.End);
                     cutFound = true;
                 }
             }
         }
 
         firstMoveDone = true;
-        return tempResult;
+        return result;
     }
 
     Ray CreateRay(Vector3 point1, Vector3 point2) => new Ray { origin = point1, direction = (point2 - point1).normalized };
@@ -1466,20 +1464,20 @@ public class ClimbShape : MonoBehaviour
             currentTriangleIndex = raycastHit.triangleIndex * 3;
             barycentricCoordinate = raycastHit.barycentricCoordinate;
 
-            currentEdge.Set(
+            currentEdgePoints.Set(
                 start: _cm.Triangles[currentTriangleIndex],
                 end: _cm.Triangles[currentTriangleIndex + 1],
                 other: _cm.Triangles[currentTriangleIndex + 2]
             );
 
-            Vector3 triCenter = (_cm.Vertices[currentEdge.Start] + _cm.Vertices[currentEdge.End] + _cm.Vertices[currentEdge.Other]) / 3;
+            Vector3 triCenter = (_cm.Vertices[currentEdgePoints.Start] + _cm.Vertices[currentEdgePoints.End] + _cm.Vertices[currentEdgePoints.Other]) / 3;
 
             Plane plane = new Plane(-transform.right, triCenter);
 
-            testCut = GetNextCut(currentEdge, transform.forward, triCenter, plane, CutType.Start);
-            lastBarycentricCoordinate = Mathf2.GetBarycentricCoordinates(testCut, _cm.Vertices[currentEdge.Start], _cm.Vertices[currentEdge.End], _cm.Vertices[currentEdge.Other]);
-            testCut = GetNextCut(currentEdge, -transform.forward, triCenter, plane, CutType.Test);
-            barycentricCoordinateBehind = Mathf2.GetBarycentricCoordinates(testCut, _cm.Vertices[currentEdge.Start], _cm.Vertices[currentEdge.End], _cm.Vertices[currentEdge.Other]);
+            testCut = GetNextCut(currentEdgePoints, transform.forward, triCenter, plane, CutType.Start);
+            lastBarycentricCoordinate = Mathf2.GetBarycentricCoordinates(testCut, _cm.Vertices[currentEdgePoints.Start], _cm.Vertices[currentEdgePoints.End], _cm.Vertices[currentEdgePoints.Other]);
+            testCut = GetNextCut(currentEdgePoints, -transform.forward, triCenter, plane, CutType.Test);
+            barycentricCoordinateBehind = Mathf2.GetBarycentricCoordinates(testCut, _cm.Vertices[currentEdgePoints.Start], _cm.Vertices[currentEdgePoints.End], _cm.Vertices[currentEdgePoints.Other]);
         }
         previousRayCastOrigin = transform.position + transform.up * 0.1f;
     }
@@ -1502,33 +1500,33 @@ public class ClimbShape : MonoBehaviour
         foreach (Edge e in _cm.TriangleInfos[index].edges)
         {
             // if the positions of the points on the line we crossed match the edge of the triangle being compared currently, store it
-            if (_cm.Vertices[currentEdge.Start] == _cm.Vertices[e.pointA])
+            if (_cm.Vertices[currentEdgePoints.Start] == _cm.Vertices[e.pointA])
             {
                 start = e.pointA;
             }
 
-            if (_cm.Vertices[currentEdge.Start] == _cm.Vertices[e.pointB])
+            if (_cm.Vertices[currentEdgePoints.Start] == _cm.Vertices[e.pointB])
             {
                 start = e.pointB;
             }
 
-            if (_cm.Vertices[currentEdge.End] == _cm.Vertices[e.pointA])
+            if (_cm.Vertices[currentEdgePoints.End] == _cm.Vertices[e.pointA])
             {
                 start = e.pointA;
             }
 
-            if (_cm.Vertices[currentEdge.End] == _cm.Vertices[e.pointB])
+            if (_cm.Vertices[currentEdgePoints.End] == _cm.Vertices[e.pointB])
             {
                 end = e.pointB;
             }
 
             if (start == -1)
             {
-                if (_cm.Vertices[currentEdge.Other] == _cm.Vertices[e.pointA])
+                if (_cm.Vertices[currentEdgePoints.Other] == _cm.Vertices[e.pointA])
                 {
                     start = e.pointA;
                 }
-                if (_cm.Vertices[currentEdge.Other] == _cm.Vertices[e.pointB])
+                if (_cm.Vertices[currentEdgePoints.Other] == _cm.Vertices[e.pointB])
                 {
                     start = e.pointB;
                 }
@@ -1536,11 +1534,11 @@ public class ClimbShape : MonoBehaviour
 
             if (end == -1)
             {
-                if (_cm.Vertices[currentEdge.Other] == _cm.Vertices[e.pointA])
+                if (_cm.Vertices[currentEdgePoints.Other] == _cm.Vertices[e.pointA])
                 {
                     end = e.pointA;
                 }
-                if (_cm.Vertices[currentEdge.Other] == _cm.Vertices[e.pointB])
+                if (_cm.Vertices[currentEdgePoints.Other] == _cm.Vertices[e.pointB])
                 {
                     end = e.pointB;
                 }
@@ -1570,7 +1568,7 @@ public class ClimbShape : MonoBehaviour
     enum CutType
     {
         Start,
-        Next,
+        NextTriangle,
         Test
     }
 
@@ -1581,11 +1579,18 @@ public class ClimbShape : MonoBehaviour
     }
 }
 
-public class EdgePoints
+public struct EdgePoints
 {
-    public int Start = -1;
-    public int End = -1;
-    public int Other = -1;
+    public int Start;
+    public int End;
+    public int Other;
+
+    public EdgePoints(bool initialize = true)
+    {
+        Start = -1;
+        End = -1;
+        Other = -1;
+    }
 
     public void Set(int start, int end, int other)
     {
@@ -1598,7 +1603,7 @@ public class EdgePoints
 
 public static class EdgePointsExtensions
 {
-    public static void SetEdges(this EdgePoints edgePoints, int start, int end, int other)
+    public static void SetEdges(ref this EdgePoints edgePoints, int start, int end, int other)
     {
         edgePoints.Start = start;
         edgePoints.End = end;
