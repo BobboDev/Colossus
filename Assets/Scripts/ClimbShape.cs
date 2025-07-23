@@ -23,10 +23,6 @@ public class ClimbShape : MonoBehaviour
     EdgePoints _currentEdge;
     EdgePoints _lastEdge;
 
-    int _previousLastEdgeStart;
-    int _previousLastEdgeEnd;
-    int _previousLastEdgeOther;
-
     float _targetSpeed;
 
     [Min(0)]
@@ -596,9 +592,9 @@ public class ClimbShape : MonoBehaviour
         // previousIndex is
 
         _previousLastIndex = _index;
-        _previousLastEdgeStart = _currentEdge.Start;
-        _previousLastEdgeEnd = _currentEdge.End;
-        _previousLastEdgeOther = _currentEdge.Other;
+        _lastEdge.Start = _currentEdge.Start;
+        _lastEdge.End = _currentEdge.End;
+        _lastEdge.Other = _currentEdge.Other;
 
         // while we have checked less distance than the edge
         while (totalDistanceChecked < distance)
@@ -653,9 +649,9 @@ public class ClimbShape : MonoBehaviour
                     i++;
                     if (i > 100)
                     {
-                        _currentEdge.Start = _previousLastEdgeStart;
-                        _currentEdge.End = _previousLastEdgeEnd;
-                        _currentEdge.Other = _previousLastEdgeOther;
+                        _currentEdge.Start = _lastEdge.Start;
+                        _currentEdge.End = _lastEdge.End;
+                        _currentEdge.Other = _lastEdge.Other;
                         _index = _previousLastIndex;
                         totalDistanceChecked = distance;
 
@@ -1238,9 +1234,9 @@ public class ClimbShape : MonoBehaviour
                                         _previousLastIndex = _lastIndex;
                                         _previousIndex = _index;
 
-                                        _previousLastEdgeStart = _currentEdge.Start;
-                                        _previousLastEdgeEnd = _currentEdge.End;
-                                        _previousLastEdgeOther = _currentEdge.Other;
+                                        _lastEdge.Start = _currentEdge.Start;
+                                        _lastEdge.End = _currentEdge.End;
+                                        _lastEdge.Other = _currentEdge.Other;
 
                                         _currentEdge.Start = e.pointA;
                                         _currentEdge.End = e.pointB;
@@ -1263,12 +1259,12 @@ public class ClimbShape : MonoBehaviour
                                         triCenter = (_cm.Vertices[_currentEdge.Start] + _cm.Vertices[_currentEdge.End] + _cm.Vertices[_currentEdge.Other]) / 3;
                                         closestPointOnEdge = Mathf2.NearestPointOnLine(_cm.Vertices[_currentEdge.Start], (_cm.Vertices[_currentEdge.Start] - _cm.Vertices[_currentEdge.End]).normalized, triCenter);
 
-                                        Vector3 previousTriCenter = (_cm.Vertices[_previousLastEdgeStart] + _cm.Vertices[_previousLastEdgeEnd] + _cm.Vertices[_previousLastEdgeOther]) / 3;
-                                        Vector3 previousClosestPointOnEdge = Mathf2.NearestPointOnLine(_cm.Vertices[_previousLastEdgeStart], (_cm.Vertices[_previousLastEdgeStart] - _cm.Vertices[_previousLastEdgeEnd]).normalized, previousTriCenter);
+                                        Vector3 previousTriCenter = (_cm.Vertices[_lastEdge.Start] + _cm.Vertices[_lastEdge.End] + _cm.Vertices[_lastEdge.Other]) / 3;
+                                        Vector3 previousClosestPointOnEdge = Mathf2.NearestPointOnLine(_cm.Vertices[_lastEdge.Start], (_cm.Vertices[_lastEdge.Start] - _cm.Vertices[_lastEdge.End]).normalized, previousTriCenter);
 
                                         _newPosition = slidePoint;
 
-                                        Vector3 cornerNormal = Vector3.Cross(_cm.Vertices[_previousLastEdgeStart] - _cm.Vertices[_previousLastEdgeEnd], _cm.Vertices[_currentEdge.Start] - _cm.Vertices[_currentEdge.End]).normalized;
+                                        Vector3 cornerNormal = Vector3.Cross(_cm.Vertices[_lastEdge.Start] - _cm.Vertices[_lastEdge.End], _cm.Vertices[_currentEdge.Start] - _cm.Vertices[_currentEdge.End]).normalized;
                                         if (Vector3.Dot(cornerNormal, transform.up) < 0)
                                         {
                                             cornerNormal = -cornerNormal;
@@ -1277,7 +1273,7 @@ public class ClimbShape : MonoBehaviour
                                         Vector3 lastEdgeNormal = (previousClosestPointOnEdge - previousTriCenter).normalized;
 
                                         Vector3 newFarCorner = _cm.Vertices[currentCornerInt] == _cm.Vertices[_currentEdge.Start] ? _cm.Vertices[_currentEdge.End] : _cm.Vertices[_currentEdge.Start];
-                                        Vector3 lastFarCorner = _cm.Vertices[currentCornerInt] == _cm.Vertices[_previousLastEdgeStart] ? _cm.Vertices[_previousLastEdgeEnd] : _cm.Vertices[_previousLastEdgeStart];
+                                        Vector3 lastFarCorner = _cm.Vertices[currentCornerInt] == _cm.Vertices[_lastEdge.Start] ? _cm.Vertices[_lastEdge.End] : _cm.Vertices[_lastEdge.Start];
 
                                         int shouldInvertNewEdgeNormal = 1;
                                         Vector3 cornerDirection = Vector3.ProjectOnPlane(transform.rotation * _input, cornerNormal).normalized;
@@ -1294,8 +1290,8 @@ public class ClimbShape : MonoBehaviour
                                             Debug.Log("Found Edge");
                                         }
 
-                                        Vector3 slidePoint2 = Mathf2.GetClosestPointOnFiniteLine(movePositionAttempt, _cm.Vertices[_previousLastEdgeStart], _cm.Vertices[_previousLastEdgeEnd]);
-                                        Vector3 slidePoint2Clamped = Mathf2.NearestPointOnLine(_cm.Vertices[_previousLastEdgeStart], _cm.Vertices[_previousLastEdgeEnd], movePositionAttempt);
+                                        Vector3 slidePoint2 = Mathf2.GetClosestPointOnFiniteLine(movePositionAttempt, _cm.Vertices[_lastEdge.Start], _cm.Vertices[_lastEdge.End]);
+                                        Vector3 slidePoint2Clamped = Mathf2.NearestPointOnLine(_cm.Vertices[_lastEdge.Start], _cm.Vertices[_lastEdge.End], movePositionAttempt);
                                         Vector3 slidePoint3 = Mathf2.GetClosestPointOnFiniteLine(movePositionAttempt, _cm.Vertices[_currentEdge.Start], _cm.Vertices[_currentEdge.End]);
                                         Vector3 slidePoint3Clamped = Mathf2.NearestPointOnLine(_cm.Vertices[_currentEdge.Start], _cm.Vertices[_currentEdge.End], movePositionAttempt);
                                         // This is for stopping the check from bouncing between edges when stuck in a corner
@@ -1322,9 +1318,9 @@ public class ClimbShape : MonoBehaviour
                                             Debug.Log("BUH");
                                             // NOT SWITCHING TO OTHER EDGE SO OF COURSE SLIDEPOINT IS STILL AT THE CORNER
                                             _onEdge = true;
-                                            _currentEdge.Start = _previousLastEdgeStart;
-                                            _currentEdge.End = _previousLastEdgeEnd;
-                                            _currentEdge.Other = _previousLastEdgeOther;
+                                            _currentEdge.Start = _lastEdge.Start;
+                                            _currentEdge.End = _lastEdge.End;
+                                            _currentEdge.Other = _lastEdge.Other;
 
                                             _index = _previousIndex;
 
