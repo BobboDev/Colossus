@@ -106,7 +106,7 @@ public class ClimbShape : MonoBehaviour
         // if not on a mesh, raycast to find a mesh
         if (!climbing)
         {
-            GetClimbableMesh();
+            TryStartClimb();
         }
         else
         {
@@ -2035,7 +2035,7 @@ public class ClimbShape : MonoBehaviour
         return default;
     }
 
-    void GetClimbableMesh()
+    void TryStartClimb()
     {
         firstMoveDone = false;
         RaycastHit hit;
@@ -2045,7 +2045,6 @@ public class ClimbShape : MonoBehaviour
             GameObject temp = hit.collider.gameObject;
             cm = temp.GetComponent<ClimbableMesh>();
 
-            cm.Climbing = true;
             climbing = true;
             transform.position = hit.point;
             index = hit.triangleIndex * 3;
@@ -2075,7 +2074,6 @@ public class ClimbShape : MonoBehaviour
         rb.position = CharacterModel.position;
         rb.GetComponent<KinematicCharacterMotor>().SetPositionAndRotation(CharacterModel.position, CharacterModel.rotation);
         climbing = false;
-        cm.Climbing = false;
     }
 
     Vector3 Tr_(Vector3 v)

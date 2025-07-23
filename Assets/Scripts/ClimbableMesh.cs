@@ -64,7 +64,6 @@ namespace Overhang
         Dictionary<string, Dictionary<int, int>> areaNewToOriginalTriangleMapGizmos;
 
         public string CurrentArea;
-        public bool Climbing;
 
         // Mesh colliderMesh;
 
