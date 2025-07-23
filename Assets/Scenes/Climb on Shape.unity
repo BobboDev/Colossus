@@ -144,12 +144,13 @@ MonoBehaviour:
   smr: {fileID: 0}
   mf: {fileID: 0}
   climbableMeshTransform: {fileID: 0}
-  Mesh: {fileID: 0}
-  Vertices: []
-  Normals: []
-  Triangles: 
+  mesh: {fileID: 0}
+  meshVerts: []
+  meshNormals: []
+  triangles: 
   meshCollider: {fileID: 0}
   CurrentArea: 
+  Climbing: 0
 --- !u!64 &7419330
 MeshCollider:
   m_ObjectHideFlags: 0
@@ -287,12 +288,13 @@ MonoBehaviour:
   smr: {fileID: 0}
   mf: {fileID: 0}
   climbableMeshTransform: {fileID: 0}
-  Mesh: {fileID: 0}
-  Vertices: []
-  Normals: []
-  Triangles: 
+  mesh: {fileID: 0}
+  meshVerts: []
+  meshNormals: []
+  triangles: 
   meshCollider: {fileID: 0}
   CurrentArea: 
+  Climbing: 0
 --- !u!64 &33538559
 MeshCollider:
   m_ObjectHideFlags: 0
@@ -568,7 +570,7 @@ Transform:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 141417623}
   serializedVersion: 2
-  m_LocalRotation: {x: 0.47622856, y: -0.21603931, z: 0.121958494, w: 0.8435992}
+  m_LocalRotation: {x: 0.03995573, y: 0.8679418, z: -0.48997048, w: 0.07077824}
   m_LocalPosition: {x: 0, y: 0, z: 0}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
@@ -647,7 +649,7 @@ Transform:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 145028742}
   serializedVersion: 2
-  m_LocalRotation: {x: 0.47622874, y: -0.21603933, z: 0.121958576, w: 0.8435991}
+  m_LocalRotation: {x: 0.03995573, y: 0.8679418, z: -0.48997048, w: 0.07077824}
   m_LocalPosition: {x: 0, y: 0, z: 0}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
@@ -1829,12 +1831,13 @@ MonoBehaviour:
   smr: {fileID: 0}
   mf: {fileID: 0}
   climbableMeshTransform: {fileID: 0}
-  Mesh: {fileID: 0}
-  Vertices: []
-  Normals: []
-  Triangles: 
+  mesh: {fileID: 0}
+  meshVerts: []
+  meshNormals: []
+  triangles: 
   meshCollider: {fileID: 0}
   CurrentArea: 
+  Climbing: 0
 --- !u!64 &188052442
 MeshCollider:
   m_ObjectHideFlags: 0
@@ -2245,12 +2248,13 @@ MonoBehaviour:
   smr: {fileID: 0}
   mf: {fileID: 0}
   climbableMeshTransform: {fileID: 0}
-  Mesh: {fileID: 0}
-  Vertices: []
-  Normals: []
-  Triangles: 
+  mesh: {fileID: 0}
+  meshVerts: []
+  meshNormals: []
+  triangles: 
   meshCollider: {fileID: 0}
   CurrentArea: 
+  Climbing: 0
 --- !u!64 &262151432
 MeshCollider:
   m_ObjectHideFlags: 0
@@ -3540,12 +3544,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   CharacterModel: {fileID: 2031369357}
-  capsule: {fileID: 851807039}
-  movementMode: 1
-  isClimbing: 0
-  onEdge: 0
-  forceSlide: 1
-  forceSlideForwardProjection: 0
+  rb: {fileID: 0}
   DirectionalSpeed: 1
   ClimbingSpeed: 1
   layerMask:
@@ -3554,6 +3553,12 @@ MonoBehaviour:
   layerMaskForwardProjection:
     serializedVersion: 2
     m_Bits: 247
+  climbing: 0
+  onEdge: 0
+  movementMode: 1
+  forceSlide: 1
+  forceSlideForwardProjection: 0
+  capsule: {fileID: 851807039}
 --- !u!4 &398723486
 Transform:
   m_ObjectHideFlags: 0
@@ -3563,7 +3568,7 @@ Transform:
   m_GameObject: {fileID: 398723481}
   serializedVersion: 2
   m_LocalRotation: {x: -0, y: -0.93281376, z: -0, w: 0.36035883}
-  m_LocalPosition: {x: -2.52, y: -13.35, z: 20.94}
+  m_LocalPosition: {x: -0.27, y: 5.655, z: 4.949}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children:
@@ -3919,12 +3924,13 @@ MonoBehaviour:
   smr: {fileID: 0}
   mf: {fileID: 0}
   climbableMeshTransform: {fileID: 0}
-  Mesh: {fileID: 0}
-  Vertices: []
-  Normals: []
-  Triangles: 
+  mesh: {fileID: 0}
+  meshVerts: []
+  meshNormals: []
+  triangles: 
   meshCollider: {fileID: 0}
   CurrentArea: 
+  Climbing: 0
 --- !u!64 &470934267
 MeshCollider:
   m_ObjectHideFlags: 0
@@ -4092,12 +4098,13 @@ MonoBehaviour:
   smr: {fileID: 0}
   mf: {fileID: 0}
   climbableMeshTransform: {fileID: 0}
-  Mesh: {fileID: 0}
-  Vertices: []
-  Normals: []
-  Triangles: 
+  mesh: {fileID: 0}
+  meshVerts: []
+  meshNormals: []
+  triangles: 
   meshCollider: {fileID: 0}
   CurrentArea: 
+  Climbing: 0
 --- !u!64 &504405780
 MeshCollider:
   m_ObjectHideFlags: 0
@@ -4162,12 +4169,13 @@ MonoBehaviour:
   smr: {fileID: 0}
   mf: {fileID: 0}
   climbableMeshTransform: {fileID: 0}
-  Mesh: {fileID: 0}
-  Vertices: []
-  Normals: []
-  Triangles: 
+  mesh: {fileID: 0}
+  meshVerts: []
+  meshNormals: []
+  triangles: 
   meshCollider: {fileID: 0}
   CurrentArea: 
+  Climbing: 0
 --- !u!64 &532227296
 MeshCollider:
   m_ObjectHideFlags: 0
@@ -4232,12 +4240,13 @@ MonoBehaviour:
   smr: {fileID: 0}
   mf: {fileID: 0}
   climbableMeshTransform: {fileID: 0}
-  Mesh: {fileID: 0}
-  Vertices: []
-  Normals: []
-  Triangles: 
+  mesh: {fileID: 0}
+  meshVerts: []
+  meshNormals: []
+  triangles: 
   meshCollider: {fileID: 0}
   CurrentArea: 
+  Climbing: 0
 --- !u!64 &565997718
 MeshCollider:
   m_ObjectHideFlags: 0
@@ -4854,12 +4863,13 @@ MonoBehaviour:
   smr: {fileID: 0}
   mf: {fileID: 0}
   climbableMeshTransform: {fileID: 0}
-  Mesh: {fileID: 0}
-  Vertices: []
-  Normals: []
-  Triangles: 
+  mesh: {fileID: 0}
+  meshVerts: []
+  meshNormals: []
+  triangles: 
   meshCollider: {fileID: 0}
   CurrentArea: 
+  Climbing: 0
 --- !u!114 &745142157
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -5026,12 +5036,13 @@ MonoBehaviour:
   smr: {fileID: 0}
   mf: {fileID: 0}
   climbableMeshTransform: {fileID: 0}
-  Mesh: {fileID: 0}
-  Vertices: []
-  Normals: []
-  Triangles: 
+  mesh: {fileID: 0}
+  meshVerts: []
+  meshNormals: []
+  triangles: 
   meshCollider: {fileID: 0}
   CurrentArea: 
+  Climbing: 0
 --- !u!64 &783530986
 MeshCollider:
   m_ObjectHideFlags: 0
@@ -5213,12 +5224,13 @@ MonoBehaviour:
   smr: {fileID: 0}
   mf: {fileID: 0}
   climbableMeshTransform: {fileID: 0}
-  Mesh: {fileID: 0}
-  Vertices: []
-  Normals: []
-  Triangles: 
+  mesh: {fileID: 0}
+  meshVerts: []
+  meshNormals: []
+  triangles: 
   meshCollider: {fileID: 0}
   CurrentArea: 
+  Climbing: 0
 --- !u!64 &849498170
 MeshCollider:
   m_ObjectHideFlags: 0
@@ -5474,7 +5486,7 @@ Transform:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 864988009}
   serializedVersion: 2
-  m_LocalRotation: {x: 0.48249054, y: -0.21512648, z: 0.12356236, w: 0.8400333}
+  m_LocalRotation: {x: 0.040481094, y: 0.86427325, z: -0.49641284, w: 0.070479095}
   m_LocalPosition: {x: 0, y: 0, z: 0}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
@@ -5503,12 +5515,13 @@ MonoBehaviour:
   smr: {fileID: 0}
   mf: {fileID: 0}
   climbableMeshTransform: {fileID: 0}
-  Mesh: {fileID: 0}
-  Vertices: []
-  Normals: []
-  Triangles: 
+  mesh: {fileID: 0}
+  meshVerts: []
+  meshNormals: []
+  triangles: 
   meshCollider: {fileID: 0}
   CurrentArea: 
+  Climbing: 0
 --- !u!64 &908213833
 MeshCollider:
   m_ObjectHideFlags: 0
@@ -5646,12 +5659,13 @@ MonoBehaviour:
   smr: {fileID: 0}
   mf: {fileID: 0}
   climbableMeshTransform: {fileID: 0}
-  Mesh: {fileID: 0}
-  Vertices: []
-  Normals: []
-  Triangles: 
+  mesh: {fileID: 0}
+  meshVerts: []
+  meshNormals: []
+  triangles: 
   meshCollider: {fileID: 0}
   CurrentArea: 
+  Climbing: 0
 --- !u!64 &934466542
 MeshCollider:
   m_ObjectHideFlags: 0
@@ -5716,12 +5730,13 @@ MonoBehaviour:
   smr: {fileID: 0}
   mf: {fileID: 0}
   climbableMeshTransform: {fileID: 0}
-  Mesh: {fileID: 0}
-  Vertices: []
-  Normals: []
-  Triangles: 
+  mesh: {fileID: 0}
+  meshVerts: []
+  meshNormals: []
+  triangles: 
   meshCollider: {fileID: 0}
   CurrentArea: 
+  Climbing: 0
 --- !u!64 &988704294
 MeshCollider:
   m_ObjectHideFlags: 0
@@ -5998,12 +6013,13 @@ MonoBehaviour:
   smr: {fileID: 0}
   mf: {fileID: 0}
   climbableMeshTransform: {fileID: 0}
-  Mesh: {fileID: 0}
-  Vertices: []
-  Normals: []
-  Triangles: 
+  mesh: {fileID: 0}
+  meshVerts: []
+  meshNormals: []
+  triangles: 
   meshCollider: {fileID: 0}
   CurrentArea: 
+  Climbing: 0
 --- !u!64 &1070460043
 MeshCollider:
   m_ObjectHideFlags: 0
@@ -6496,12 +6512,13 @@ MonoBehaviour:
   smr: {fileID: 0}
   mf: {fileID: 0}
   climbableMeshTransform: {fileID: 0}
-  Mesh: {fileID: 0}
-  Vertices: []
-  Normals: []
-  Triangles: 
+  mesh: {fileID: 0}
+  meshVerts: []
+  meshNormals: []
+  triangles: 
   meshCollider: {fileID: 0}
   CurrentArea: 
+  Climbing: 0
 --- !u!64 &1142017398
 MeshCollider:
   m_ObjectHideFlags: 0
@@ -9789,8 +9806,8 @@ Transform:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1382542760}
   serializedVersion: 2
-  m_LocalRotation: {x: 0.48249033, y: -0.21512613, z: 0.12356207, w: 0.8400335}
-  m_LocalPosition: {x: -1.6788428, y: -10.35, z: 19.405415}
+  m_LocalRotation: {x: 0.040481117, y: 0.86427325, z: -0.49641293, w: 0.07047912}
+  m_LocalPosition: {x: -0.55353, y: 8.655001, z: 6.675879}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
@@ -9863,12 +9880,13 @@ MonoBehaviour:
   smr: {fileID: 0}
   mf: {fileID: 0}
   climbableMeshTransform: {fileID: 0}
-  Mesh: {fileID: 0}
-  Vertices: []
-  Normals: []
-  Triangles: 
+  mesh: {fileID: 0}
+  meshVerts: []
+  meshNormals: []
+  triangles: 
   meshCollider: {fileID: 0}
   CurrentArea: 
+  Climbing: 0
 --- !u!64 &1383280273
 MeshCollider:
   m_ObjectHideFlags: 0
@@ -10040,7 +10058,7 @@ Transform:
   m_GameObject: {fileID: 1394487261}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: -1.6788428, y: -10.35, z: 19.405415}
+  m_LocalPosition: {x: -0.55353, y: 8.655001, z: 6.675879}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children:
@@ -10539,12 +10557,13 @@ MonoBehaviour:
   smr: {fileID: 0}
   mf: {fileID: 0}
   climbableMeshTransform: {fileID: 0}
-  Mesh: {fileID: 0}
-  Vertices: []
-  Normals: []
-  Triangles: 
+  mesh: {fileID: 0}
+  meshVerts: []
+  meshNormals: []
+  triangles: 
   meshCollider: {fileID: 0}
   CurrentArea: 
+  Climbing: 0
 --- !u!114 &1508121776
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -10747,12 +10766,13 @@ MonoBehaviour:
   smr: {fileID: 0}
   mf: {fileID: 0}
   climbableMeshTransform: {fileID: 0}
-  Mesh: {fileID: 0}
-  Vertices: []
-  Normals: []
-  Triangles: 
+  mesh: {fileID: 0}
+  meshVerts: []
+  meshNormals: []
+  triangles: 
   meshCollider: {fileID: 0}
   CurrentArea: 
+  Climbing: 0
 --- !u!64 &1559576414
 MeshCollider:
   m_ObjectHideFlags: 0
@@ -10812,12 +10832,13 @@ MonoBehaviour:
   smr: {fileID: 0}
   mf: {fileID: 0}
   climbableMeshTransform: {fileID: 0}
-  Mesh: {fileID: 0}
-  Vertices: []
-  Normals: []
-  Triangles: 
+  mesh: {fileID: 0}
+  meshVerts: []
+  meshNormals: []
+  triangles: 
   meshCollider: {fileID: 0}
   CurrentArea: 
+  Climbing: 0
 --- !u!64 &1569471389
 MeshCollider:
   m_ObjectHideFlags: 0
@@ -10877,12 +10898,13 @@ MonoBehaviour:
   smr: {fileID: 0}
   mf: {fileID: 0}
   climbableMeshTransform: {fileID: 0}
-  Mesh: {fileID: 0}
-  Vertices: []
-  Normals: []
-  Triangles: 
+  mesh: {fileID: 0}
+  meshVerts: []
+  meshNormals: []
+  triangles: 
   meshCollider: {fileID: 0}
   CurrentArea: 
+  Climbing: 0
 --- !u!64 &1590461734
 MeshCollider:
   m_ObjectHideFlags: 0
@@ -11124,12 +11146,13 @@ MonoBehaviour:
   smr: {fileID: 0}
   mf: {fileID: 0}
   climbableMeshTransform: {fileID: 0}
-  Mesh: {fileID: 0}
-  Vertices: []
-  Normals: []
-  Triangles: 
+  mesh: {fileID: 0}
+  meshVerts: []
+  meshNormals: []
+  triangles: 
   meshCollider: {fileID: 0}
   CurrentArea: 
+  Climbing: 0
 --- !u!64 &1684704560
 MeshCollider:
   m_ObjectHideFlags: 0
@@ -12629,12 +12652,13 @@ MonoBehaviour:
   smr: {fileID: 0}
   mf: {fileID: 0}
   climbableMeshTransform: {fileID: 0}
-  Mesh: {fileID: 0}
-  Vertices: []
-  Normals: []
-  Triangles: 
+  mesh: {fileID: 0}
+  meshVerts: []
+  meshNormals: []
+  triangles: 
   meshCollider: {fileID: 0}
   CurrentArea: 
+  Climbing: 0
 --- !u!64 &1872077276
 MeshCollider:
   m_ObjectHideFlags: 0
@@ -12716,12 +12740,13 @@ MonoBehaviour:
   smr: {fileID: 0}
   mf: {fileID: 0}
   climbableMeshTransform: {fileID: 0}
-  Mesh: {fileID: 0}
-  Vertices: []
-  Normals: []
-  Triangles: 
+  mesh: {fileID: 0}
+  meshVerts: []
+  meshNormals: []
+  triangles: 
   meshCollider: {fileID: 0}
   CurrentArea: 
+  Climbing: 0
 --- !u!137 &1884823513 stripped
 SkinnedMeshRenderer:
   m_CorrespondingSourceObject: {fileID: 364879578786488926, guid: 033ea32b3602679449c9d06d70cc7434, type: 3}
@@ -12968,12 +12993,13 @@ MonoBehaviour:
   smr: {fileID: 0}
   mf: {fileID: 0}
   climbableMeshTransform: {fileID: 0}
-  Mesh: {fileID: 0}
-  Vertices: []
-  Normals: []
-  Triangles: 
+  mesh: {fileID: 0}
+  meshVerts: []
+  meshNormals: []
+  triangles: 
   meshCollider: {fileID: 0}
   CurrentArea: 
+  Climbing: 0
 --- !u!64 &1914348727
 MeshCollider:
   m_ObjectHideFlags: 0
@@ -13033,12 +13059,13 @@ MonoBehaviour:
   smr: {fileID: 0}
   mf: {fileID: 0}
   climbableMeshTransform: {fileID: 0}
-  Mesh: {fileID: 0}
-  Vertices: []
-  Normals: []
-  Triangles: 
+  mesh: {fileID: 0}
+  meshVerts: []
+  meshNormals: []
+  triangles: 
   meshCollider: {fileID: 0}
   CurrentArea: 
+  Climbing: 0
 --- !u!64 &1923394969
 MeshCollider:
   m_ObjectHideFlags: 0
@@ -13110,12 +13137,13 @@ MonoBehaviour:
   smr: {fileID: 0}
   mf: {fileID: 0}
   climbableMeshTransform: {fileID: 0}
-  Mesh: {fileID: 0}
-  Vertices: []
-  Normals: []
-  Triangles: 
+  mesh: {fileID: 0}
+  meshVerts: []
+  meshNormals: []
+  triangles: 
   meshCollider: {fileID: 0}
   CurrentArea: 
+  Climbing: 0
 --- !u!64 &1928330493
 MeshCollider:
   m_ObjectHideFlags: 0
@@ -13180,12 +13208,13 @@ MonoBehaviour:
   smr: {fileID: 0}
   mf: {fileID: 0}
   climbableMeshTransform: {fileID: 0}
-  Mesh: {fileID: 0}
-  Vertices: []
-  Normals: []
-  Triangles: 
+  mesh: {fileID: 0}
+  meshVerts: []
+  meshNormals: []
+  triangles: 
   meshCollider: {fileID: 0}
   CurrentArea: 
+  Climbing: 0
 --- !u!64 &1955286553
 MeshCollider:
   m_ObjectHideFlags: 0
@@ -14031,28 +14060,28 @@ MonoBehaviour:
   serializeData2:
     selectionData:
       positions:
-      - x: -0.03259468
-        y: -0.0067634583
+      - x: -0.032594204
+        y: -0.006763935
         z: 0.014912605
-      - x: -0.053585052
-        y: -0.01939106
-        z: 0.01718998
-      - x: 0.0005264282
-        y: 0.0010604858
-        z: -0.00060272217
-      - x: 0.0005264282
-        y: -0.0077676773
-        z: -0.05564785
-      - x: 0.00052547455
-        y: 0.03749752
-        z: -0.063993454
+      - x: -0.05358553
+        y: -0.019390583
+        z: 0.017189503
+      - x: 0.0005249977
+        y: 0.0010614395
+        z: -0.0006017685
+      - x: 0.0005249977
+        y: -0.007768631
+        z: -0.055646896
+      - x: 0.0005249977
+        y: 0.037498474
+        z: -0.06399298
       attributes:
       - Value: 1
       - Value: 2
       - Value: 1
       - Value: 2
       - Value: 2
-      maxConnectionDistance: 0.055748567
+      maxConnectionDistance: 0.055748865
       userEdit: 0
     preBuildData:
       enabled: 0
@@ -14104,12 +14133,13 @@ MonoBehaviour:
   smr: {fileID: 0}
   mf: {fileID: 0}
   climbableMeshTransform: {fileID: 0}
-  Mesh: {fileID: 0}
-  Vertices: []
-  Normals: []
-  Triangles: 
+  mesh: {fileID: 0}
+  meshVerts: []
+  meshNormals: []
+  triangles: 
   meshCollider: {fileID: 0}
   CurrentArea: 
+  Climbing: 0
 --- !u!64 &2130970914
 MeshCollider:
   m_ObjectHideFlags: 0

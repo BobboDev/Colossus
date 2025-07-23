@@ -10,10 +10,10 @@ public class AngleVector : MonoBehaviour
         int[] tris = new int[] { 0, 1, 2 };
         Vector3[] tempVerts = new Vector3[] { new Vector3(0, 0, 0), new Vector3(0, 0, 0), new Vector3(0, 0, 0) };
 
-        Debug.Log(cm.Vertices.Count);
+        Debug.Log(cm.meshVerts.Count);
         for (int i = 0; i < 3; i++)
         {
-            tempVerts[i] = cm.Vertices[cm.Triangles[triangleIndex + i]];
+            tempVerts[i] = cm.meshVerts[cm.triangles[triangleIndex + i]];
         }
 
         // 'rotate' the Barycentric coordinate by desired angle
@@ -62,11 +62,11 @@ public class AngleVector : MonoBehaviour
         int[] tris = new int[] { 0, 1, 2 };
         Vector3[] tempVerts = new Vector3[] { new Vector3(0, 0, 0), new Vector3(0, 0, 0), new Vector3(0, 0, 0) };
 
-        Debug.Log(cm.Vertices.Count);
+        Debug.Log(cm.meshVerts.Count);
 
-        tempVerts[0] = cm.Vertices[cm.Triangles[p1]];
-        tempVerts[1] = cm.Vertices[cm.Triangles[p2]];
-        tempVerts[2] = cm.Vertices[cm.Triangles[p3]];
+        tempVerts[0] = cm.meshVerts[cm.triangles[p1]];
+        tempVerts[1] = cm.meshVerts[cm.triangles[p2]];
+        tempVerts[2] = cm.meshVerts[cm.triangles[p3]];
 
         // 'rotate' the Barycentric coordinate by desired angle
         Vector3 adjustedBarycentric = Quaternion.Euler(angle * barycentricCoordinates.x,

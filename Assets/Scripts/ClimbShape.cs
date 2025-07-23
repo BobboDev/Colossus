@@ -2177,3 +2177,27 @@ public class ClimbShape : MonoBehaviour
     }
 
 }
+public class EdgePoints
+{
+    public int Start = -1;
+    public int End = -1;
+    public int Other = -1;
+
+    public void Set(int start, int end, int other)
+    {
+        Start = start;
+        End = end;
+        Other = other;
+    }
+
+}
+
+public static class EdgePointsExtensions
+{
+    public static void SetEdges(this EdgePoints edgePoints, int start, int end, int other)
+    {
+        edgePoints.Start = start;
+        edgePoints.End = end;
+        edgePoints.Other = other;
+    }
+}
