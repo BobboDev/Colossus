@@ -150,7 +150,6 @@ MonoBehaviour:
   Triangles: 
   MeshCollider: {fileID: 0}
   CurrentArea: 
-  Climbing: 0
 --- !u!64 &7419330
 MeshCollider:
   m_ObjectHideFlags: 0
@@ -294,7 +293,6 @@ MonoBehaviour:
   Triangles: 
   MeshCollider: {fileID: 0}
   CurrentArea: 
-  Climbing: 0
 --- !u!64 &33538559
 MeshCollider:
   m_ObjectHideFlags: 0
@@ -499,11 +497,6 @@ Transform:
   m_CorrespondingSourceObject: {fileID: -8679921383154817045, guid: 650f8242412dfd64da8afb1597a0aff2, type: 3}
   m_PrefabInstance: {fileID: 102150143}
   m_PrefabAsset: {fileID: 0}
---- !u!4 &110802857 stripped
-Transform:
-  m_CorrespondingSourceObject: {fileID: 4910347778502631328, guid: f186db7591b8cfb43a74b5b11d50d4bc, type: 3}
-  m_PrefabInstance: {fileID: 2111543210}
-  m_PrefabAsset: {fileID: 0}
 --- !u!1 &141417623
 GameObject:
   m_ObjectHideFlags: 3
@@ -575,7 +568,7 @@ Transform:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 141417623}
   serializedVersion: 2
-  m_LocalRotation: {x: 0.03995569, y: 0.86794174, z: -0.4899706, w: 0.070778154}
+  m_LocalRotation: {x: 0.039955698, y: 0.86794174, z: -0.4899706, w: 0.070778154}
   m_LocalPosition: {x: 0, y: 0, z: 0}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
@@ -1842,7 +1835,6 @@ MonoBehaviour:
   Triangles: 
   MeshCollider: {fileID: 0}
   CurrentArea: 
-  Climbing: 0
 --- !u!64 &188052442
 MeshCollider:
   m_ObjectHideFlags: 0
@@ -2259,7 +2251,6 @@ MonoBehaviour:
   Triangles: 
   MeshCollider: {fileID: 0}
   CurrentArea: 
-  Climbing: 0
 --- !u!64 &262151432
 MeshCollider:
   m_ObjectHideFlags: 0
@@ -3549,21 +3540,18 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   CharacterModel: {fileID: 2031369357}
-  rb: {fileID: 0}
   DirectionalSpeed: 1
   ClimbingSpeed: 1
-  layerMask:
+  _layerMask:
     serializedVersion: 2
     m_Bits: 64
-  layerMaskForwardProjection:
+  _layerMaskForwardProjection:
     serializedVersion: 2
-    m_Bits: 247
-  climbing: 0
-  onEdge: 0
-  movementMode: 1
-  forceSlide: 1
-  forceSlideForwardProjection: 0
-  capsule: {fileID: 851807039}
+    m_Bits: 192
+  _movementMode: 1
+  ForceSlide: 0
+  ForceSlideForwardProjection: 0
+  DepenetrationCapsule: {fileID: 398723492}
 --- !u!4 &398723486
 Transform:
   m_ObjectHideFlags: 0
@@ -3935,7 +3923,6 @@ MonoBehaviour:
   Triangles: 
   MeshCollider: {fileID: 0}
   CurrentArea: 
-  Climbing: 0
 --- !u!64 &470934267
 MeshCollider:
   m_ObjectHideFlags: 0
@@ -4109,7 +4096,6 @@ MonoBehaviour:
   Triangles: 
   MeshCollider: {fileID: 0}
   CurrentArea: 
-  Climbing: 0
 --- !u!64 &504405780
 MeshCollider:
   m_ObjectHideFlags: 0
@@ -4180,7 +4166,6 @@ MonoBehaviour:
   Triangles: 
   MeshCollider: {fileID: 0}
   CurrentArea: 
-  Climbing: 0
 --- !u!64 &532227296
 MeshCollider:
   m_ObjectHideFlags: 0
@@ -4251,7 +4236,6 @@ MonoBehaviour:
   Triangles: 
   MeshCollider: {fileID: 0}
   CurrentArea: 
-  Climbing: 0
 --- !u!64 &565997718
 MeshCollider:
   m_ObjectHideFlags: 0
@@ -4874,7 +4858,6 @@ MonoBehaviour:
   Triangles: 
   MeshCollider: {fileID: 0}
   CurrentArea: 
-  Climbing: 0
 --- !u!114 &745142157
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -5047,7 +5030,6 @@ MonoBehaviour:
   Triangles: 
   MeshCollider: {fileID: 0}
   CurrentArea: 
-  Climbing: 0
 --- !u!64 &783530986
 MeshCollider:
   m_ObjectHideFlags: 0
@@ -5235,7 +5217,6 @@ MonoBehaviour:
   Triangles: 
   MeshCollider: {fileID: 0}
   CurrentArea: 
-  Climbing: 0
 --- !u!64 &849498170
 MeshCollider:
   m_ObjectHideFlags: 0
@@ -5526,7 +5507,6 @@ MonoBehaviour:
   Triangles: 
   MeshCollider: {fileID: 0}
   CurrentArea: 
-  Climbing: 0
 --- !u!64 &908213833
 MeshCollider:
   m_ObjectHideFlags: 0
@@ -5670,7 +5650,6 @@ MonoBehaviour:
   Triangles: 
   MeshCollider: {fileID: 0}
   CurrentArea: 
-  Climbing: 0
 --- !u!64 &934466542
 MeshCollider:
   m_ObjectHideFlags: 0
@@ -5741,7 +5720,6 @@ MonoBehaviour:
   Triangles: 
   MeshCollider: {fileID: 0}
   CurrentArea: 
-  Climbing: 0
 --- !u!64 &988704294
 MeshCollider:
   m_ObjectHideFlags: 0
@@ -6024,7 +6002,6 @@ MonoBehaviour:
   Triangles: 
   MeshCollider: {fileID: 0}
   CurrentArea: 
-  Climbing: 0
 --- !u!64 &1070460043
 MeshCollider:
   m_ObjectHideFlags: 0
@@ -6523,7 +6500,6 @@ MonoBehaviour:
   Triangles: 
   MeshCollider: {fileID: 0}
   CurrentArea: 
-  Climbing: 0
 --- !u!64 &1142017398
 MeshCollider:
   m_ObjectHideFlags: 0
@@ -9891,7 +9867,6 @@ MonoBehaviour:
   Triangles: 
   MeshCollider: {fileID: 0}
   CurrentArea: 
-  Climbing: 0
 --- !u!64 &1383280273
 MeshCollider:
   m_ObjectHideFlags: 0
@@ -10568,7 +10543,6 @@ MonoBehaviour:
   Triangles: 
   MeshCollider: {fileID: 0}
   CurrentArea: 
-  Climbing: 0
 --- !u!114 &1508121776
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -10777,7 +10751,6 @@ MonoBehaviour:
   Triangles: 
   MeshCollider: {fileID: 0}
   CurrentArea: 
-  Climbing: 0
 --- !u!64 &1559576414
 MeshCollider:
   m_ObjectHideFlags: 0
@@ -10843,7 +10816,6 @@ MonoBehaviour:
   Triangles: 
   MeshCollider: {fileID: 0}
   CurrentArea: 
-  Climbing: 0
 --- !u!64 &1569471389
 MeshCollider:
   m_ObjectHideFlags: 0
@@ -10909,7 +10881,6 @@ MonoBehaviour:
   Triangles: 
   MeshCollider: {fileID: 0}
   CurrentArea: 
-  Climbing: 0
 --- !u!64 &1590461734
 MeshCollider:
   m_ObjectHideFlags: 0
@@ -10975,12 +10946,12 @@ Transform:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1647294130}
   serializedVersion: 2
-  m_LocalRotation: {x: -0.55241215, y: 0.831499, z: -0.0018182395, w: 0.058711134}
-  m_LocalPosition: {x: 3.39, y: -2.38, z: -4.4}
-  m_LocalScale: {x: 0.88657, y: 0.88657045, z: 0.88657075}
+  m_LocalRotation: {x: 0.03952085, y: -0.052362103, z: 0.59306145, w: 0.8024803}
+  m_LocalPosition: {x: 0.9631303, y: -2.1507688, z: -0.8664107}
+  m_LocalScale: {x: 0.8865698, y: 0.88657033, z: 0.88657093}
   m_ConstrainProportionsScale: 0
   m_Children: []
-  m_Father: {fileID: 110802857}
+  m_Father: {fileID: 2032256512}
   m_LocalEulerAnglesHint: {x: 172.788, y: -182.147, z: -107.20401}
 --- !u!65 &1647294132
 BoxCollider:
@@ -11157,7 +11128,6 @@ MonoBehaviour:
   Triangles: 
   MeshCollider: {fileID: 0}
   CurrentArea: 
-  Climbing: 0
 --- !u!64 &1684704560
 MeshCollider:
   m_ObjectHideFlags: 0
@@ -12344,7 +12314,10 @@ PrefabInstance:
       objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
-    m_AddedGameObjects: []
+    m_AddedGameObjects:
+    - targetCorrespondingSourceObject: {fileID: 4910347778502631328, guid: 033ea32b3602679449c9d06d70cc7434, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 1647294131}
     m_AddedComponents:
     - targetCorrespondingSourceObject: {fileID: 919132149155446097, guid: 033ea32b3602679449c9d06d70cc7434, type: 3}
       insertIndex: -1
@@ -12663,7 +12636,6 @@ MonoBehaviour:
   Triangles: 
   MeshCollider: {fileID: 0}
   CurrentArea: 
-  Climbing: 0
 --- !u!64 &1872077276
 MeshCollider:
   m_ObjectHideFlags: 0
@@ -12751,7 +12723,6 @@ MonoBehaviour:
   Triangles: 
   MeshCollider: {fileID: 0}
   CurrentArea: 
-  Climbing: 0
 --- !u!137 &1884823513 stripped
 SkinnedMeshRenderer:
   m_CorrespondingSourceObject: {fileID: 364879578786488926, guid: 033ea32b3602679449c9d06d70cc7434, type: 3}
@@ -13004,7 +12975,6 @@ MonoBehaviour:
   Triangles: 
   MeshCollider: {fileID: 0}
   CurrentArea: 
-  Climbing: 0
 --- !u!64 &1914348727
 MeshCollider:
   m_ObjectHideFlags: 0
@@ -13070,7 +13040,6 @@ MonoBehaviour:
   Triangles: 
   MeshCollider: {fileID: 0}
   CurrentArea: 
-  Climbing: 0
 --- !u!64 &1923394969
 MeshCollider:
   m_ObjectHideFlags: 0
@@ -13148,7 +13117,6 @@ MonoBehaviour:
   Triangles: 
   MeshCollider: {fileID: 0}
   CurrentArea: 
-  Climbing: 0
 --- !u!64 &1928330493
 MeshCollider:
   m_ObjectHideFlags: 0
@@ -13219,7 +13187,6 @@ MonoBehaviour:
   Triangles: 
   MeshCollider: {fileID: 0}
   CurrentArea: 
-  Climbing: 0
 --- !u!64 &1955286553
 MeshCollider:
   m_ObjectHideFlags: 0
@@ -13586,6 +13553,11 @@ Transform:
   - {fileID: 851807036}
   m_Father: {fileID: 398723486}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!4 &2032256512 stripped
+Transform:
+  m_CorrespondingSourceObject: {fileID: 4910347778502631328, guid: 033ea32b3602679449c9d06d70cc7434, type: 3}
+  m_PrefabInstance: {fileID: 1712693556}
+  m_PrefabAsset: {fileID: 0}
 --- !u!1 &2085790931 stripped
 GameObject:
   m_CorrespondingSourceObject: {fileID: 919132149155446097, guid: 0d06c64c6c34b0c4b8e7aa71b550d810, type: 3}
@@ -13678,10 +13650,7 @@ PrefabInstance:
       objectReference: {fileID: 9100000, guid: 0bc90640258f6084b84f3310aef1932a, type: 2}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
-    m_AddedGameObjects:
-    - targetCorrespondingSourceObject: {fileID: 4910347778502631328, guid: f186db7591b8cfb43a74b5b11d50d4bc, type: 3}
-      insertIndex: 0
-      addedObject: {fileID: 1647294131}
+    m_AddedGameObjects: []
     m_AddedComponents:
     - targetCorrespondingSourceObject: {fileID: 9152130670491148218, guid: f186db7591b8cfb43a74b5b11d50d4bc, type: 3}
       insertIndex: -1
@@ -14147,7 +14116,6 @@ MonoBehaviour:
   Triangles: 
   MeshCollider: {fileID: 0}
   CurrentArea: 
-  Climbing: 0
 --- !u!64 &2130970914
 MeshCollider:
   m_ObjectHideFlags: 0
