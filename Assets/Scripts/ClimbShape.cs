@@ -3,6 +3,8 @@ using UnityEngine;
 using UnityEditor;
 using Overhang;
 using KinematicCharacterController;
+using System;
+using System.Linq;
 
 public class ClimbShape : MonoBehaviour
 {
@@ -1761,241 +1763,208 @@ public class ClimbShape : MonoBehaviour
         return cm.transform.TransformDirection(cm.Normals[normalIndex]);
     }
 
+    ////////////////
+    // REFACTOR Start //
+    ////////////////
+
+    /// <summary>
+    /// Finds the next intersection point between a plane and a triangle's edges as part of a cutting operation.
+    /// </summary>
+    /// <param name="p1">First vertex index of the triangle.</param>
+    /// <param name="p2">Second vertex index of the triangle.</param>
+    /// <param name="p3">Third vertex index of the triangle.</param>
+    /// <param name="direction">Direction vector used to validate intersection points.</param>
+    /// <param name="position">Current position for directional checks.</param>
+    /// <param name="plane">Plane to intersect with the triangle's edges.</param>
+    /// <param name="cutType">Type of cut operation: Start (initial cut), Next (subsequent cut), or Test (check without state update).</param>
+    /// <returns>The intersection point if found; otherwise, the current position.</returns>
     Vector3 GetNextCut(int p1, int p2, int p3, Vector3 direction, Vector3 position, Plane plane, CutType cutType)
     {
-        int p1Temp = p1;
-        int p2Temp = p2;
-        int p3Temp = p3;
-
+        // Update tracking of the previous edge when moving to a new triangle (except in Test or Start modes)
         if (index != lastIndex && cutType != CutType.Test && cutType != CutType.Start)
         {
-            if (cm.Vertices[p1] == cm.Vertices[lastEdgeStart])
-                lastEdgeStart = p1;
-            else if (cm.Vertices[p1] == cm.Vertices[lastEdgeEnd])
-                lastEdgeEnd = p1;
-            else if (cm.Vertices[p1] == cm.Vertices[lastEdgeOther])
-                lastEdgeOther = p1;
-
-            if (cm.Vertices[p2] == cm.Vertices[lastEdgeStart])
-                lastEdgeStart = p2;
-            else if (cm.Vertices[p2] == cm.Vertices[lastEdgeEnd])
-                lastEdgeEnd = p2;
-            else if (cm.Vertices[p2] == cm.Vertices[lastEdgeOther])
-                lastEdgeOther = p2;
-
-            if (cm.Vertices[p3] == cm.Vertices[lastEdgeStart])
-                lastEdgeStart = p3;
-            else if (cm.Vertices[p3] == cm.Vertices[lastEdgeEnd])
-                lastEdgeEnd = p3;
-            else if (cm.Vertices[p3] == cm.Vertices[lastEdgeOther])
-                lastEdgeOther = p3;
-
+            UpdateEdgeIndices(p1, p2, p3);
         }
 
-        // If we're starting or testing, we're doing so from a point within the triangle and we test all edges.
-        // Otherwise make the next p1 the START edge, p2 the OTHER edge, and p3 the END edge
-        // We do this because the edge that's about to be the one we pass can only be an other edge than the current start->end edge, so we want to be sure not to check start->end
-        if (cutType == CutType.Next && lastIndex != index)
+        // Reorder vertices for CutType.Next to ensure continuity with the previous edge
+        (int vertexA, int vertexB, int vertexC) = OrderVerticesForCut(p1, p2, p3, cutType);
+
+        // Define the triangle's edges: each tuple represents (start vertex, end vertex, opposite vertex)
+        var edges = new[]
         {
-            // we want p1 to be lastEdgeStart
-            if (cm.Vertices[lastEdgeStart] == cm.Vertices[p1])
-                p1Temp = p1;
-            if (cm.Vertices[lastEdgeStart] == cm.Vertices[p2])
-                p1Temp = p2;
-            if (cm.Vertices[lastEdgeStart] == cm.Vertices[p3])
-                p1Temp = p3;
-            // p2 to be lastEdgeOther
-            if (cm.Vertices[p1] != cm.Vertices[lastEdgeStart] && cm.Vertices[p1] != cm.Vertices[lastEdgeEnd])
-                p2Temp = p1;
-            if (cm.Vertices[p2] != cm.Vertices[lastEdgeStart] && cm.Vertices[p2] != cm.Vertices[lastEdgeEnd])
-                p2Temp = p2;
-            if (cm.Vertices[p3] != cm.Vertices[lastEdgeStart] && cm.Vertices[p3] != cm.Vertices[lastEdgeEnd])
-                p2Temp = p3;
-            // we want p3 to be lastEdgeEnd
-            if (cm.Vertices[lastEdgeEnd] == cm.Vertices[p1])
-                p3Temp = p1;
-            if (cm.Vertices[lastEdgeEnd] == cm.Vertices[p2])
-                p3Temp = p2;
-            if (cm.Vertices[lastEdgeEnd] == cm.Vertices[p3])
-                p3Temp = p3;
-        }
+        (start: vertexA, end: vertexB, other: vertexC), // Edge A -> B, opposite C
+        (start: vertexB, end: vertexC, other: vertexA), // Edge B -> C, opposite A
+        (start: vertexA, end: vertexC, other: vertexB)  // Edge A -> C, opposite B
+    };
 
+        // Precompute ray data for each edge (ray, length, and plane intersection distance)
+        var edgeRayData = ComputeRayDataForEdges(edges, plane);
 
+        // Select edges to process: only the first two for Next (new edges), all three otherwise
+        int edgesToProcessCount = cutType == CutType.Next ? 2 : 3;
 
-        // create rays of edges to use with planar casts
+        Vector3 result = position; // Default return value if no intersection is found
+        bool hasIntersection = false;
 
-        // START >> OTHER edge
-        Ray ray1 = CreateRay(cm.Vertices[p1Temp], cm.Vertices[p2Temp]);
-        // END >> OTHER edge
-        Ray ray2 = CreateRay(cm.Vertices[p2Temp], cm.Vertices[p3Temp]);
-        // START >> END edge
-        Ray ray3 = CreateRay(cm.Vertices[p1Temp], cm.Vertices[p3Temp]);
-
-        // record ray's lengths, since Ray.direction does not have a magnitude
-        // in order of size, because that's how edges are defined.
-        float ray1Length = Vector3.Distance(cm.Vertices[p1Temp], cm.Vertices[p2Temp]);
-        float ray2Length = Vector3.Distance(cm.Vertices[p2Temp], cm.Vertices[p3Temp]);
-        float ray3Length = Vector3.Distance(cm.Vertices[p1Temp], cm.Vertices[p3Temp]);
-
-        // a variable for Plane.Raycast to store distance in
-        float hitDistance1 = -1;
-        float hitDistance2 = -1;
-        float hitDistance3 = -1;
-        // temporarily make result: position, so that if all else fails we get put back in the same spot
-        Vector3 tempResult = position;
-        // OTHER >> START edge
-        // if the edge intersects the plane...
-        plane.Raycast(ray1, out hitDistance1);
-        plane.Raycast(ray2, out hitDistance2);
-        plane.Raycast(ray3, out hitDistance3);
+        // In GetNextCut method, replace the loop inside the if (firstMoveDone) block:
         if (firstMoveDone)
         {
-            if (hitDistance1 > 0)
+            for (int i = 0; i < edgesToProcessCount; i++)
             {
-                if (cutType == CutType.Start)
-                {
-                }
-                //... and the point along the ray is within the length of the edge...
-                if (hitDistance1 <= ray1Length
-                 || hitDistance1 > ray1Length && hitDistance2 > ray2Length && hitDistance3 < ray3Length && hitDistance3 > 0
-                 || hitDistance1 > ray1Length && hitDistance3 > ray3Length && hitDistance2 < ray2Length && hitDistance2 > 0
-                 )
-                {
-                    // and the cut type is next or
-                    // start/test AND the intersection point is in front of the player
-                    if (cutType == CutType.Next ||
-                       ((cutType == CutType.Start || cutType == CutType.Test) &&
-                       (Vector3.Dot(direction.normalized, (position - ray1.GetPoint(hitDistance1)).normalized) <= 0
-                 || hitDistance1 > ray1Length && hitDistance2 > ray2Length && hitDistance3 < ray3Length && hitDistance3 > 0
-                 || hitDistance1 > ray1Length && hitDistance3 > ray3Length && hitDistance2 < ray2Length && hitDistance2 > 0)))
-                    {
-                        if (cutType == CutType.Start)
-                        {
-
-                        }
-                        tempResult = ray1.GetPoint(hitDistance1);
-
-                        // if we're not just doing a test probe, return the relevant edges. The edge we're testing here is p1 to p2, so we make those start and end
-                        if (cutType != CutType.Test)
-                        {
-                            lastEdgeStart = p1Temp;
-                            lastEdgeEnd = p2Temp;
-                            lastEdgeOther = p3Temp;
-
-                            if (cutType == CutType.Start)
-                            {
-
-                            }
-                        }
-
-                    }
-                }
-            }
-            else if (hitDistance1 == 0)
-            {
-                if (cutType != CutType.Test && lastIndex != index)
-                {
-                    tempResult = cm.Vertices[p1Temp];
-                    lastEdgeStart = p1Temp;
-                    lastEdgeEnd = p2Temp;
-                    lastEdgeOther = p3Temp;
-                    cutFound = true;
-                }
-            }
-
-            // END >> OTHER edge
-            if (hitDistance2 > 0)
-            {
-                // same as last time, it shouldn't be able to hit if the last one already did
-                if (hitDistance2 <= ray2Length
-                 || hitDistance2 > ray2Length && hitDistance1 > ray1Length && hitDistance3 < ray3Length && hitDistance3 > 0
-                 || hitDistance2 > ray2Length && hitDistance3 > ray3Length && hitDistance1 < ray1Length && hitDistance1 > 0
-                 )
-                {
-
-                    if (cutType == CutType.Next ||
-                       ((cutType == CutType.Start || cutType == CutType.Test) &&
-                       (Vector3.Dot(direction.normalized, (position - ray2.GetPoint(hitDistance2)).normalized) <= 0
-                 || hitDistance2 > ray2Length && hitDistance1 > ray1Length && hitDistance3 < ray3Length && hitDistance3 > 0
-                 || hitDistance2 > ray2Length && hitDistance3 > ray3Length && hitDistance1 < ray1Length && hitDistance1 > 0)))
-                    {
-                        if (cutType == CutType.Start)
-                        {
-                        }
-                        tempResult = ray2.GetPoint(hitDistance2);
-                        if (cutType != CutType.Test)
-                        {
-                            lastEdgeStart = p2Temp;
-                            lastEdgeEnd = p3Temp;
-                            lastEdgeOther = p1Temp;
-                            cutFound = true;
-
-                            if (cutType == CutType.Start)
-                            {
-                            }
-                        }
-                    }
-                }
-            }
-            else if (hitDistance2 == 0 && !cutFound)
-            {
-                if (cutType != CutType.Test && lastIndex != index)
-                {
-                    tempResult = cm.Vertices[p2Temp];
-                    lastEdgeStart = p2Temp;
-                    lastEdgeEnd = p3Temp;
-                    lastEdgeOther = p1Temp;
-                }
-            }
-
-
-            // we only test the START >> END edge if it's the start of a new loop or a test because we just passed through this
-            if (hitDistance3 > 0)
-            {
-                if (cutType == CutType.Start)
-                {
-                }
-                if (hitDistance3 <= ray3Length
-                 || hitDistance3 > ray3Length && hitDistance1 > ray1Length && hitDistance2 < ray2Length && hitDistance2 > 0
-                 || hitDistance3 > ray3Length && hitDistance2 > ray2Length && hitDistance1 < ray1Length && hitDistance1 > 0
-                 )
-                {
-                    if (((cutType == CutType.Start || cutType == CutType.Test) && (
-                    (Vector3.Dot(direction.normalized, (position - ray3.GetPoint(hitDistance3)).normalized) <= 0
-                     || hitDistance3 > ray3Length && hitDistance1 > ray1Length && hitDistance2 < ray2Length && hitDistance2 > 0
-                     || hitDistance3 > ray3Length && hitDistance2 > ray2Length && hitDistance1 < ray1Length && hitDistance1 > 0)))
-                    )
-                    {
-                        if (cutType == CutType.Start)
-                        {
-                        }
-                        tempResult = ray3.GetPoint(hitDistance3);
-                        if (cutType != CutType.Test)
-                        {
-                            lastEdgeStart = p1Temp;
-                            lastEdgeEnd = p3Temp;
-                            lastEdgeOther = p2Temp;
-                            cutFound = true;
-                        }
-                    }
-                }
-            }
-            else if (hitDistance3 == 0 && !cutFound)
-            {
-                if (cutType != CutType.Test && lastIndex != index)
-                {
-                    tempResult = cm.Vertices[p1Temp];
-                    lastEdgeStart = p1Temp;
-                    lastEdgeEnd = p3Temp;
-                    lastEdgeOther = p2Temp;
-                    cutFound = true;
-                }
+                ProcessEdgeIntersection(edges[i], edgeRayData[i], edges, edgeRayData,
+                                       direction, position, cutType,
+                                       ref result, ref hasIntersection, isFirstEdge: i == 0);
             }
         }
 
-        firstMoveDone = true;
-        return tempResult;
+        firstMoveDone = true; // Mark that the first move has occurred for subsequent calls
+        return result;
     }
+
+    /// <summary>
+    /// Orders triangle vertices based on the cut type, aligning with the previous edge for CutType.Next.
+    /// </summary>
+    private (int vertexA, int vertexB, int vertexC) OrderVerticesForCut(int p1, int p2, int p3, CutType cutType)
+    {
+        if (cutType == CutType.Next && lastIndex != index)
+        {
+            int vertexA = MatchVertex(lastEdgeStart, p1, p2, p3); // Start matches previous edge start
+            int vertexC = MatchVertex(lastEdgeEnd, p1, p2, p3);   // End matches previous edge end
+            int vertexB = (p1 != vertexA && p1 != vertexC) ? p1 :
+                          (p2 != vertexA && p2 != vertexC) ? p2 : p3; // Middle is the remaining vertex
+            return (vertexA, vertexB, vertexC);
+        }
+        return (p1, p2, p3); // Default order for Start or Test
+    }
+
+    /// <summary>
+    /// Computes ray data (ray, length, intersection distance) for each edge against the plane.
+    /// </summary>
+    private (Ray ray, float length, float hitDistance)[] ComputeRayDataForEdges((int start, int end, int other)[] edges, Plane plane)
+    {
+        var rayData = new (Ray ray, float length, float hitDistance)[3];
+        for (int i = 0; i < 3; i++)
+        {
+            Vector3 startPos = cm.Vertices[edges[i].start];
+            Vector3 endPos = cm.Vertices[edges[i].end];
+            Vector3 rayDirection = (endPos - startPos).normalized;
+            Ray ray = new Ray(startPos, rayDirection);
+            float edgeLength = Vector3.Distance(startPos, endPos);
+            plane.Raycast(ray, out float hitDistance);
+            rayData[i] = (ray, edgeLength, hitDistance);
+        }
+        return rayData;
+    }
+
+    /// <summary>
+    /// Processes an edge to find and validate an intersection with the plane, updating the result if accepted.
+    /// </summary>
+    private void ProcessEdgeIntersection((int start, int end, int other) edge,
+                                        (Ray ray, float length, float hitDistance) rayData,
+                                        (int start, int end, int other)[] edges, // Added parameter
+                                        (Ray ray, float length, float hitDistance)[] edgeRayData, // Added parameter
+                                        Vector3 direction, Vector3 position, CutType cutType,
+                                        ref Vector3 result, ref bool hasIntersection, bool isFirstEdge)
+    {
+        var (ray, edgeLength, hitDistance) = rayData;
+
+        // Case 1: Ray intersects the plane beyond the starting point
+        if (hitDistance > 0)
+        {
+            int edgeIndex = Array.IndexOf(edges, edge); // Now uses the passed 'edges' parameter
+            bool isValid = IsIntersectionValid(hitDistance, edgeLength, edgeRayData, edgeIndex); // Now uses the passed 'edgeRayData'
+            if (isValid)
+            {
+                Vector3 intersectionPoint = ray.GetPoint(hitDistance);
+                if (ShouldAcceptIntersection(cutType, direction, position, intersectionPoint))
+                {
+                    result = intersectionPoint;
+                    UpdateEdgeState(edge, cutType, ref hasIntersection, isFirstEdge);
+                }
+            }
+        }
+        // Case 2: Ray starts on the plane (hitDistance = 0), use start vertex under specific conditions
+        else if (hitDistance == 0 && cutType != CutType.Test && lastIndex != index &&
+                 (isFirstEdge || !hasIntersection))
+        {
+            result = cm.Vertices[edge.start];
+            UpdateEdgeState(edge, cutType, ref hasIntersection, isFirstEdge);
+        }
+    }
+
+    /// <summary>
+    /// Updates the last edge state variables if not in Test mode.
+    /// </summary>
+    private void UpdateEdgeState((int start, int end, int other) edge, CutType cutType,
+                                ref bool hasIntersection, bool isFirstEdge)
+    {
+        if (cutType != CutType.Test)
+        {
+            lastEdgeStart = edge.start;
+            lastEdgeEnd = edge.end;
+            lastEdgeOther = edge.other;
+            if (!isFirstEdge) hasIntersection = true;
+        }
+    }
+
+    /// <summary>
+    /// Updates last edge indices to match the current triangle's vertices.
+    /// </summary>
+    private void UpdateEdgeIndices(int p1, int p2, int p3)
+    {
+        lastEdgeStart = MatchVertex(lastEdgeStart, p1, p2, p3);
+        lastEdgeEnd = MatchVertex(lastEdgeEnd, p1, p2, p3);
+        lastEdgeOther = MatchVertex(lastEdgeOther, p1, p2, p3);
+    }
+
+    /// <summary>
+    /// Finds the vertex index among p1, p2, p3 that matches the target vertex by position.
+    /// </summary>
+    private int MatchVertex(int target, int p1, int p2, int p3)
+    {
+        if (cm.Vertices[p1] == cm.Vertices[target]) return p1;
+        if (cm.Vertices[p2] == cm.Vertices[target]) return p2;
+        if (cm.Vertices[p3] == cm.Vertices[target]) return p3;
+        return p1; // Fallback to p1 if no match (assumes a match should exist)
+    }
+
+    /// <summary>
+    /// Validates an intersection, including extended conditions beyond the edge length.
+    /// </summary>
+    private bool IsIntersectionValid(float hitDistance, float rayLength,
+                                    (Ray ray, float length, float hitDistance)[] rayData, int index)
+    {
+        if (hitDistance <= rayLength) return true;
+
+        int i1 = (index + 1) % 3;
+        int i2 = (index + 2) % 3;
+        float hit1 = rayData[i1].hitDistance;
+        float len1 = rayData[i1].length;
+        float hit2 = rayData[i2].hitDistance;
+        float len2 = rayData[i2].length;
+
+        return (hitDistance > rayLength && hit1 > len1 && hit2 < len2 && hit2 > 0) ||
+               (hitDistance > rayLength && hit2 > len2 && hit1 < len1 && hit1 > 0);
+    }
+
+    /// <summary>
+    /// Determines if an intersection point should be accepted based on cut type and direction.
+    /// </summary>
+    private bool ShouldAcceptIntersection(CutType cutType, Vector3 direction,
+                                         Vector3 position, Vector3 intersectionPoint)
+    {
+        if (cutType == CutType.Next) return true;
+        if (cutType == CutType.Start || cutType == CutType.Test)
+        {
+            // Accept if the intersection is not in the forward direction from the position
+            return Vector3.Dot(direction.normalized, (position - intersectionPoint).normalized) <= 0;
+        }
+        return false;
+    }
+
+    //////////////
+    // REFACTOR END //
+    //////////////
 
     Ray CreateRay(Vector3 point1, Vector3 point2) => new Ray { origin = point1, direction = (point2 - point1).normalized };
 
