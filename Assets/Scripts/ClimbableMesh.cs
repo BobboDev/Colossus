@@ -24,39 +24,33 @@ namespace Overhang
         public Mesh mesh;
 
         [HideInInspector]
-        public List<Vector3> meshVerts = new List<Vector3>();
+        public List<Vector3> Vertices = new List<Vector3>();
         [HideInInspector]
-        public List<Vector3> meshNormals = new List<Vector3>();
+        public List<Vector3> Normals = new List<Vector3>();
 
         [HideInInspector]
-        public int[] triangles;
+        public int[] Triangles;
 
         [HideInInspector]
-        public Dictionary<int, AdjacentEdges> triangleInfos, originalTriangleInfos = new();
+        public Dictionary<int, AdjacentEdges> TriangleAdjacencyInfo, OriginalTriangleAdjacencyInfo = new();
 
         [HideInInspector]
-        public Dictionary<Edge, AdjacentTriangles> edgeInfos, originalEdgeInfos = new();
+        public Dictionary<Edge, AdjacentTriangles> EdgeAdjacencyInfo, OriginalEdgeAdjacencyInfo = new();
 
         [HideInInspector]
-        public Dictionary<int, HashSet<Edge>> vertexInfos, originalVertexInfos = new();
+        public Dictionary<int, HashSet<Edge>> EdgesAttachedToCorner, OriginalEdgesAttachedToCorner = new();
 
         [HideInInspector]
-        public Dictionary<int, HashSet<int>> vertexNormals = new();
+        public Dictionary<int, HashSet<int>> SharedNormals = new();
 
         [HideInInspector]
-        public Dictionary<Vector3, int> duplicateVerts = new();
+        public HashSet<Edge> OutsideEdges, OriginalOutsideEdges = new();
 
         [HideInInspector]
-        public Dictionary<int, int> normalReferences = new();
+        public Dictionary<PositionEdge, List<Edge>> SharedEdges, OriginalSharedEdges = new();
 
         [HideInInspector]
-        public HashSet<Edge> outsideEdges, originalOutsideEdges = new();
-
-        [HideInInspector]
-        public Dictionary<PositionEdge, List<Edge>> sharedEdges, originalSharedEdges = new();
-
-        [HideInInspector]
-        public MeshCollider meshCollider;
+        public MeshCollider MeshCollider;
 
         FaceSelection FaceSelection;
 
@@ -98,31 +92,31 @@ namespace Overhang
                 // edges are always defined with the lowest 'triangle' index first.
                 // so, 6 -> 15, never 15 -> 6
                 // this is so that when we refer to them, we know how to define the edge
-                if (triangles[triangleIndex + i] < triangles[(triangleIndex + ((i + 1) % 3))])
+                if (Triangles[triangleIndex + i] < Triangles[(triangleIndex + ((i + 1) % 3))])
                 {
                     tempAdjacentEdges.edges[i] = new Edge()
                     {
-                        pointA = triangles[triangleIndex + i],
-                        pointB = triangles[(triangleIndex + ((i + 1) % 3))],
+                        pointA = Triangles[triangleIndex + i],
+                        pointB = Triangles[(triangleIndex + ((i + 1) % 3))],
                     };
                 }
                 else
                 {
                     tempAdjacentEdges.edges[i] = new Edge()
                     {
-                        pointB = triangles[triangleIndex + i],
-                        pointA = triangles[(triangleIndex + ((i + 1) % 3))],
+                        pointB = Triangles[triangleIndex + i],
+                        pointA = Triangles[(triangleIndex + ((i + 1) % 3))],
                     };
                 }
-                AddVertex(triangles[triangleIndex + i], tempAdjacentEdges.edges[i]);
-                AddVertex(triangles[(triangleIndex + ((i + 1) % 3))], tempAdjacentEdges.edges[i]);
+                AddVertex(Triangles[triangleIndex + i], tempAdjacentEdges.edges[i]);
+                AddVertex(Triangles[(triangleIndex + ((i + 1) % 3))], tempAdjacentEdges.edges[i]);
                 // add side to list with current triangle index
                 // if already associated to a triangle, make it triangleB
                 // if triangleA == triangleB, it's an edge with no adjacent tri
                 AddEdge(tempAdjacentEdges.edges[i], triangleIndex);
             }
             // add triangle with 3 sides to list
-            triangleInfos.Add(triangleIndex, tempAdjacentEdges);
+            TriangleAdjacencyInfo.Add(triangleIndex, tempAdjacentEdges);
 
         }
 
@@ -130,37 +124,37 @@ namespace Overhang
         {
             AdjacentTriangles tempEntry;
 
-            if (!edgeInfos.TryGetValue(edge, out tempEntry))
+            if (!EdgeAdjacencyInfo.TryGetValue(edge, out tempEntry))
             {
                 AdjacentTriangles tempAdjacentTriangles = new AdjacentTriangles() { triangleA = triangleIndex, triangleB = triangleIndex, edgeA = edge };
-                if (!outsideEdges.Contains(edge))
+                if (!OutsideEdges.Contains(edge))
                 {
-                    outsideEdges.Add(edge);
+                    OutsideEdges.Add(edge);
                 }
-                edgeInfos.Add(edge, tempAdjacentTriangles);
+                EdgeAdjacencyInfo.Add(edge, tempAdjacentTriangles);
             }
             else
             {
-                AdjacentTriangles tempAdjacentTriangles = new AdjacentTriangles() { triangleA = edgeInfos[edge].triangleA, triangleB = triangleIndex };
-                if (outsideEdges.Contains(edge))
+                AdjacentTriangles tempAdjacentTriangles = new AdjacentTriangles() { triangleA = EdgeAdjacencyInfo[edge].triangleA, triangleB = triangleIndex };
+                if (OutsideEdges.Contains(edge))
                 {
-                    outsideEdges.Remove(edge);
+                    OutsideEdges.Remove(edge);
                 }
-                edgeInfos[edge] = tempAdjacentTriangles;
+                EdgeAdjacencyInfo[edge] = tempAdjacentTriangles;
             }
         }
 
         void AddVertex(int key, Edge value)
         {
-            if (!vertexInfos.ContainsKey(key))
+            if (!EdgesAttachedToCorner.ContainsKey(key))
             {
                 HashSet<Edge> tempVertices = new HashSet<Edge>();
                 tempVertices.Add(value);
-                vertexInfos.Add(key, tempVertices);
+                EdgesAttachedToCorner.Add(key, tempVertices);
             }
             else
             {
-                vertexInfos[key].Add(value);
+                EdgesAttachedToCorner[key].Add(value);
             }
         }
         void GenerateAdjacencyInfo(bool isOnArea, bool isStart)
@@ -168,36 +162,34 @@ namespace Overhang
             if (isOnArea || isStart)
             {
                 // if (outsideEdges != null && outsideEdges.Count > 0)
-                outsideEdges = new();
+                OutsideEdges = new();
                 // if (triangleInfos != null && triangleInfos.Count > 0)
-                triangleInfos = new();
+                TriangleAdjacencyInfo = new();
                 // if (edgeInfos != null && edgeInfos.Count > 0)
-                edgeInfos = new();
+                EdgeAdjacencyInfo = new();
                 // if (vertexInfos != null && vertexInfos.Count > 0)
-                vertexInfos = new();
+                EdgesAttachedToCorner = new();
                 // if (sharedEdges != null && sharedEdges.Count > 0)
-                sharedEdges = new();
+                SharedEdges = new();
 
-                for (int i = 0; i < triangles.Length; i += 3)
+                for (int i = 0; i < Triangles.Length; i += 3)
                 {
                     AddTriangle(i);
                 }
             }
             else
             {
-                outsideEdges = originalOutsideEdges;
-                triangleInfos = originalTriangleInfos;
-                edgeInfos = originalEdgeInfos;
-                vertexInfos = originalVertexInfos;
-                sharedEdges = originalSharedEdges;
+                OutsideEdges = OriginalOutsideEdges;
+                TriangleAdjacencyInfo = OriginalTriangleAdjacencyInfo;
+                EdgeAdjacencyInfo = OriginalEdgeAdjacencyInfo;
+                EdgesAttachedToCorner = OriginalEdgesAttachedToCorner;
+                SharedEdges = OriginalSharedEdges;
             }
-
-
         }
 
         void InitializeMesh()
         {
-            meshCollider = GetComponent<MeshCollider>();
+            MeshCollider = GetComponent<MeshCollider>();
             smr = GetComponent<SkinnedMeshRenderer>();
             mf = GetComponent<MeshFilter>();
             mesh = new Mesh();
@@ -239,8 +231,8 @@ namespace Overhang
             }
             // DrawEdges(tempMesh);
             // colliderMesh = mesh;
-            meshCollider.sharedMesh = mesh;
-            triangles = mesh.triangles;
+            MeshCollider.sharedMesh = mesh;
+            Triangles = mesh.triangles;
 
 
 
@@ -251,11 +243,11 @@ namespace Overhang
 
             CalculateEdges(false, true);
 
-            originalOutsideEdges = outsideEdges;
-            originalTriangleInfos = triangleInfos;
-            originalEdgeInfos = edgeInfos;
-            originalVertexInfos = vertexInfos;
-            originalSharedEdges = sharedEdges;
+            OriginalOutsideEdges = OutsideEdges;
+            OriginalTriangleAdjacencyInfo = TriangleAdjacencyInfo;
+            OriginalEdgeAdjacencyInfo = EdgeAdjacencyInfo;
+            OriginalEdgesAttachedToCorner = EdgesAttachedToCorner;
+            OriginalSharedEdges = SharedEdges;
 
             gameObject.layer = LayerMask.NameToLayer("Climbable");
 
@@ -272,38 +264,38 @@ namespace Overhang
             HashSet<PositionEdge> tempPositionEdges = new();
 
             //Checking just outside edges as those are the ones that are potentially 'hard'
-            foreach (Edge e in outsideEdges)
+            foreach (Edge e in OutsideEdges)
             {
                 PositionEdge tempPositionEdge;
                 // making sure pointA is always the vertex closer to world origin (0,0). Is that a good idea?
-                if (meshVerts[e.pointA].magnitude < meshVerts[e.pointB].magnitude)
+                if (Vertices[e.pointA].magnitude < Vertices[e.pointB].magnitude)
                 {
-                    tempPositionEdge = new PositionEdge() { pointA = meshVerts[e.pointA], pointB = meshVerts[e.pointB] };
+                    tempPositionEdge = new PositionEdge() { pointA = Vertices[e.pointA], pointB = Vertices[e.pointB] };
                 }
                 else
                 {
-                    tempPositionEdge = new PositionEdge() { pointB = meshVerts[e.pointA], pointA = meshVerts[e.pointB] };
+                    tempPositionEdge = new PositionEdge() { pointB = Vertices[e.pointA], pointA = Vertices[e.pointB] };
                 }
                 // if a matching edge is found, add this to its position edges with a key of positionEdge
                 if (tempPositionEdges.Contains(tempPositionEdge))
                 {
-                    sharedEdges[tempPositionEdge].Add(e);
+                    SharedEdges[tempPositionEdge].Add(e);
                 }
                 else
                 {
                     List<Edge> tempEdgeList = new List<Edge>();
                     tempEdgeList.Add(e);
                     tempPositionEdges.Add(tempPositionEdge);
-                    sharedEdges.Add(tempPositionEdge, tempEdgeList);
+                    SharedEdges.Add(tempPositionEdge, tempEdgeList);
                 }
             }
 
             var itemsToRemove = new List<PositionEdge>();
-            Dictionary<Edge, AdjacentTriangles> tempEdgeInfos = edgeInfos;
+            Dictionary<Edge, AdjacentTriangles> tempEdgeInfos = EdgeAdjacencyInfo;
 
             for (int i = 0; i < 15; i++)
             {
-                foreach (var e in sharedEdges)
+                foreach (var e in SharedEdges)
                 {
                     if (e.Value.Count != 2)
                     {
@@ -312,9 +304,9 @@ namespace Overhang
                     else
                     {
                         //
-                        AdjacentTriangles tempEdge1 = new() { triangleA = edgeInfos[e.Value[0]].triangleA, triangleB = edgeInfos[e.Value[1]].triangleA };
+                        AdjacentTriangles tempEdge1 = new() { triangleA = EdgeAdjacencyInfo[e.Value[0]].triangleA, triangleB = EdgeAdjacencyInfo[e.Value[1]].triangleA };
                         tempEdgeInfos[e.Value[0]] = tempEdge1;
-                        AdjacentTriangles tempEdge2 = new() { triangleA = edgeInfos[e.Value[1]].triangleA, triangleB = edgeInfos[e.Value[0]].triangleA };
+                        AdjacentTriangles tempEdge2 = new() { triangleA = EdgeAdjacencyInfo[e.Value[1]].triangleA, triangleB = EdgeAdjacencyInfo[e.Value[0]].triangleA };
                         tempEdgeInfos[e.Value[1]] = tempEdge2;
                         // PROBLEM!!!!
                         // I think this is where shared edges should be sharing connected vertices, but they're not in some cases...
@@ -324,80 +316,80 @@ namespace Overhang
                         if (mesh.vertices[e.Value[0].pointA] == mesh.vertices[e.Value[1].pointA])
                         {
                             // for every edge coming off of line B's pointA 
-                            foreach (Edge edge in vertexInfos[e.Value[1].pointA])
+                            foreach (Edge edge in EdgesAttachedToCorner[e.Value[1].pointA])
                             {
                                 // if it isn't already attached to pointA
-                                if (!vertexInfos[e.Value[0].pointA].Contains(edge))
+                                if (!EdgesAttachedToCorner[e.Value[0].pointA].Contains(edge))
                                 {
                                     // and if the second line isn't equal to this other line
                                     if (!(e.Value[1].pointA == edge.pointA && e.Value[1].pointB == edge.pointB) && !(e.Value[1].pointA == edge.pointB && e.Value[1].pointB == edge.pointA))
-                                        vertexInfos[e.Value[0].pointA].Add(edge); // then add the edge to pointA
+                                        EdgesAttachedToCorner[e.Value[0].pointA].Add(edge); // then add the edge to pointA
                                 }
                             }
-                            foreach (Edge edge in vertexInfos[e.Value[0].pointA])
+                            foreach (Edge edge in EdgesAttachedToCorner[e.Value[0].pointA])
                             {
-                                if (!vertexInfos[e.Value[1].pointA].Contains(edge))
+                                if (!EdgesAttachedToCorner[e.Value[1].pointA].Contains(edge))
                                 {
                                     if (!(e.Value[0].pointA == edge.pointA && e.Value[0].pointB == edge.pointB) && !(e.Value[0].pointA == edge.pointB && e.Value[0].pointB == edge.pointA))
-                                        vertexInfos[e.Value[1].pointA].Add(edge);
+                                        EdgesAttachedToCorner[e.Value[1].pointA].Add(edge);
                                 }
                             }
                         }
 
                         if (mesh.vertices[e.Value[0].pointA] == mesh.vertices[e.Value[1].pointB])
                         {
-                            foreach (Edge edge in vertexInfos[e.Value[1].pointB])
+                            foreach (Edge edge in EdgesAttachedToCorner[e.Value[1].pointB])
                             {
-                                if (!vertexInfos[e.Value[0].pointA].Contains(edge))
+                                if (!EdgesAttachedToCorner[e.Value[0].pointA].Contains(edge))
                                 {
                                     if (!(e.Value[1].pointA == edge.pointA && e.Value[1].pointB == edge.pointB) && !(e.Value[1].pointA == edge.pointB && e.Value[1].pointB == edge.pointA))
-                                        vertexInfos[e.Value[0].pointA].Add(edge);
+                                        EdgesAttachedToCorner[e.Value[0].pointA].Add(edge);
                                 }
                             }
-                            foreach (Edge edge in vertexInfos[e.Value[0].pointA])
+                            foreach (Edge edge in EdgesAttachedToCorner[e.Value[0].pointA])
                             {
-                                if (!vertexInfos[e.Value[1].pointB].Contains(edge))
+                                if (!EdgesAttachedToCorner[e.Value[1].pointB].Contains(edge))
                                 {
                                     if (!(e.Value[0].pointA == edge.pointA && e.Value[0].pointB == edge.pointB) && !(e.Value[0].pointA == edge.pointB && e.Value[0].pointB == edge.pointA))
-                                        vertexInfos[e.Value[1].pointB].Add(edge);
+                                        EdgesAttachedToCorner[e.Value[1].pointB].Add(edge);
                                 }
                             }
                         }
                         if (mesh.vertices[e.Value[0].pointB] == mesh.vertices[e.Value[1].pointB])
                         {
-                            foreach (Edge edge in vertexInfos[e.Value[1].pointB])
+                            foreach (Edge edge in EdgesAttachedToCorner[e.Value[1].pointB])
                             {
-                                if (!vertexInfos[e.Value[0].pointB].Contains(edge))
+                                if (!EdgesAttachedToCorner[e.Value[0].pointB].Contains(edge))
                                 {
                                     if (!(e.Value[1].pointA == edge.pointA && e.Value[1].pointB == edge.pointB) && !(e.Value[1].pointA == edge.pointB && e.Value[1].pointB == edge.pointA))
-                                        vertexInfos[e.Value[0].pointB].Add(edge);
+                                        EdgesAttachedToCorner[e.Value[0].pointB].Add(edge);
                                 }
                             }
-                            foreach (Edge edge in vertexInfos[e.Value[0].pointB])
+                            foreach (Edge edge in EdgesAttachedToCorner[e.Value[0].pointB])
                             {
-                                if (!vertexInfos[e.Value[1].pointB].Contains(edge))
+                                if (!EdgesAttachedToCorner[e.Value[1].pointB].Contains(edge))
                                 {
                                     if (!(e.Value[0].pointA == edge.pointA && e.Value[0].pointB == edge.pointB) && !(e.Value[0].pointA == edge.pointB && e.Value[0].pointB == edge.pointA))
-                                        vertexInfos[e.Value[1].pointB].Add(edge);
+                                        EdgesAttachedToCorner[e.Value[1].pointB].Add(edge);
                                 }
                             }
                         }
                         if (mesh.vertices[e.Value[0].pointB] == mesh.vertices[e.Value[1].pointA])
                         {
-                            foreach (Edge edge in vertexInfos[e.Value[1].pointA])
+                            foreach (Edge edge in EdgesAttachedToCorner[e.Value[1].pointA])
                             {
-                                if (!vertexInfos[e.Value[0].pointB].Contains(edge))
+                                if (!EdgesAttachedToCorner[e.Value[0].pointB].Contains(edge))
                                 {
                                     if (!(e.Value[1].pointA == edge.pointA && e.Value[1].pointB == edge.pointB) && !(e.Value[1].pointA == edge.pointB && e.Value[1].pointB == edge.pointA))
-                                        vertexInfos[e.Value[0].pointB].Add(edge);
+                                        EdgesAttachedToCorner[e.Value[0].pointB].Add(edge);
                                 }
                             }
-                            foreach (Edge edge in vertexInfos[e.Value[0].pointB])
+                            foreach (Edge edge in EdgesAttachedToCorner[e.Value[0].pointB])
                             {
-                                if (!vertexInfos[e.Value[1].pointA].Contains(edge))
+                                if (!EdgesAttachedToCorner[e.Value[1].pointA].Contains(edge))
                                 {
                                     if (!(e.Value[0].pointA == edge.pointA && e.Value[0].pointB == edge.pointB) && !(e.Value[0].pointA == edge.pointB && e.Value[0].pointB == edge.pointA))
-                                        vertexInfos[e.Value[1].pointA].Add(edge);
+                                        EdgesAttachedToCorner[e.Value[1].pointA].Add(edge);
                                 }
                             }
                         }
@@ -405,11 +397,11 @@ namespace Overhang
                     }
                 }
             }
-            edgeInfos = tempEdgeInfos;
+            EdgeAdjacencyInfo = tempEdgeInfos;
 
             foreach (var e in itemsToRemove)
             {
-                sharedEdges.Remove(e);
+                SharedEdges.Remove(e);
             }
         }
         public int GetArea(int index)
@@ -460,7 +452,7 @@ namespace Overhang
         {
             if (test)
             {
-                foreach (var e in edgeInfos.Values)
+                foreach (var e in EdgeAdjacencyInfo.Values)
                 {
                     // foreach (var e2 in e.edges)
                     // {
@@ -526,8 +518,8 @@ namespace Overhang
         }
         public void RecalculateMesh(bool isStart)
         {
-            meshVerts.Clear();
-            meshNormals.Clear();
+            Vertices.Clear();
+            Normals.Clear();
             Vector3[] tempVertices = new Vector3[0];
             Vector3[] tempNormals = new Vector3[0];
 
@@ -588,9 +580,9 @@ namespace Overhang
                     // Debug.Log();
                 }
             }
-            triangles = mesh.triangles;
+            Triangles = mesh.triangles;
 
-            meshCollider.sharedMesh = mesh;
+            MeshCollider.sharedMesh = mesh;
 
             if (smr != null)
             {
@@ -607,12 +599,12 @@ namespace Overhang
 
             foreach (Vector3 v in tempVertices)
             {
-                meshVerts.Add(localToWorldMatrix.MultiplyPoint3x4(v));
+                Vertices.Add(localToWorldMatrix.MultiplyPoint3x4(v));
             }
 
             foreach (Vector3 n in tempNormals)
             {
-                meshNormals.Add(localToWorldMatrix.MultiplyVector(n));
+                Normals.Add(localToWorldMatrix.MultiplyVector(n));
             }
 
             // You have areaOriginalToNewTriangleMap and areaNewToOriginalTriangleMap here as well
