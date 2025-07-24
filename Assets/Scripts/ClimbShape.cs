@@ -50,7 +50,7 @@ public class ClimbShape : MonoBehaviour
     float _frameRate;
 
     public MovementMode _movementMode;
-    Vector3 _lastForward;
+    Vector3 _forwardLastFrame;
 
     public bool ForceSlide;
     public bool ForceSlideForwardProjection;
@@ -140,7 +140,7 @@ public class ClimbShape : MonoBehaviour
             }
 
             // calculate movement on the mesh based on input
-            Travel(tempInput, false, false);
+            Travel(directionInput: tempInput, depenetratePass: false, isFinalPass: false);
             Vector3 pointOnTriangle = GetPositionFromBarycentric(_barycentricCoordinate, _currentEdgePoints);
             transform.position = pointOnTriangle;
 
@@ -191,7 +191,7 @@ public class ClimbShape : MonoBehaviour
         }
     }
 
-    void Travel(Vector3 direction, bool depenetratePass, bool isFinalPass)
+    void Travel(Vector3 directionInput, bool depenetratePass, bool isFinalPass)
     {
         // Get the new deformed position of the player based on the vertex and barycentric coordinate that was calculated in the last loop
         Vector3 pointOnTriangle = GetPositionFromBarycentric(_barycentricCoordinate, _currentEdgePoints);
@@ -207,7 +207,7 @@ public class ClimbShape : MonoBehaviour
         transform.position = pointOnTriangle;
 
         // Calculate the the direction towards the FORWARD facing point, NOT the movement facing point
-        Vector3 tempForward = (forwardPointOnTriangle - behindPointOnTriangle).normalized;
+        Vector3 forwardFromRecordedBarycentric = (forwardPointOnTriangle - behindPointOnTriangle).normalized;
 
         if (Input.GetKey(KeyCode.LeftShift))
         {
@@ -300,21 +300,20 @@ public class ClimbShape : MonoBehaviour
 
         turnAngle += Input.GetKey(KeyCode.E) ? 100 * Time.deltaTime : 0;
         turnAngle -= Input.GetKey(KeyCode.Q) ? 100 * Time.deltaTime : 0;
-        tempForward = Quaternion.Euler(0, turnAngle, 0) * tempForward;
+        forwardFromRecordedBarycentric = Quaternion.Euler(0, turnAngle, 0) * forwardFromRecordedBarycentric;
 
         if (_movementMode == MovementMode.Directional)
         {
-            if (direction.magnitude > 0)
+            if (directionInput.magnitude > 0)
             {
-                tempForward = _lastForward;
-
+                forwardFromRecordedBarycentric = _forwardLastFrame;
             }
         }
 
         // In case of "viewing vector is equal to zero" error
-        if (tempForward != Vector3.zero)
+        if (forwardFromRecordedBarycentric != Vector3.zero)
         {
-            transform.rotation = Quaternion.LookRotation(Vector3.ProjectOnPlane(tempForward, groundNormal), groundNormal); // set rotation to be towards the forward point.
+            transform.rotation = Quaternion.LookRotation(Vector3.ProjectOnPlane(forwardFromRecordedBarycentric, groundNormal), groundNormal); // set rotation to be towards the forward point.
         }
         else
         {
@@ -325,13 +324,13 @@ public class ClimbShape : MonoBehaviour
         // Get the direction towards the edge 
         Vector3 triCenter = (_cm.Vertices[_currentEdgePoints.Start] + _cm.Vertices[_currentEdgePoints.End] + _cm.Vertices[_currentEdgePoints.Other]) / 3;
         Vector3 closestPointOnEdge = Mathf2.NearestPointOnLine(_cm.Vertices[_currentEdgePoints.Start], (_cm.Vertices[_currentEdgePoints.Start] - _cm.Vertices[_currentEdgePoints.End]).normalized, triCenter);
-        Vector3 getNewtempForwardDirection = Vector3.zero;
-        Vector3 getNewtempForwardDirectionBehind = Vector3.zero;
+        // Vector3 getNewtempForwardDirection = Vector3.zero;
+        // Vector3 getNewtempForwardDirectionBehind = Vector3.zero;
 
         if (_movementMode == MovementMode.Directional)
         {
             // This check works as intended
-            if (direction.magnitude > 0)
+            if (directionInput.magnitude > 0)
             {
                 float angleToRotateby = Camera.main.transform.rotation.eulerAngles.y - transform.rotation.eulerAngles.y;
                 _input = Quaternion.Euler(0, angleToRotateby, 0) * _input;
@@ -349,16 +348,15 @@ public class ClimbShape : MonoBehaviour
                 }
                 Plane NewtempForwardPlane = new Plane(Quaternion.FromToRotation(Vector3.up, groundNormal) * CharacterModel.right, transform.position);
                 // Debug.DrawLine(transform.position, transform.position + NewtempForwardPlane.normal);
-                Vector3 PlaneNormalRight = Mathf2.RotateAroundAxis(NewtempForwardPlane.normal, groundNormal, 90);
+                Vector3 cutDirection = Mathf2.RotateAroundAxis(NewtempForwardPlane.normal, groundNormal, 90);
                 // Debug.DrawLine(transform.position, transform.position + PlaneNormalRight, Color.blue);
-                getNewtempForwardDirection = FindTrianglePlaneIntersection(_currentEdgePoints, PlaneNormalRight, transform.position, NewtempForwardPlane, CutType.Test);
-                getNewtempForwardDirectionBehind = FindTrianglePlaneIntersection(_currentEdgePoints, -PlaneNormalRight, transform.position, NewtempForwardPlane, CutType.Test);
+                forwardPointOnTriangle = FindTrianglePlaneIntersection(_currentEdgePoints, cutDirection, transform.position, NewtempForwardPlane, CutType.Test);
+                behindPointOnTriangle = FindTrianglePlaneIntersection(_currentEdgePoints, -cutDirection, transform.position, NewtempForwardPlane, CutType.Test);
                 // Debug.DrawLine(getNewtempForwardDirection, getNewtempForwardDirection + Vector3.up, Color.black);
                 // Debug.DrawLine(getNewtempForwardDirectionBehind, getNewtempForwardDirectionBehind + Vector3.up, Color.black);
                 // Debug.DrawLine(transform.position, transform.position + tempForward, Color.magenta);
 
-                getNewtempForwardDirection = (getNewtempForwardDirection - getNewtempForwardDirectionBehind).normalized;
-                tempForward = getNewtempForwardDirection;
+                forwardFromRecordedBarycentric = (forwardPointOnTriangle - behindPointOnTriangle).normalized;
                 // tempForward = Vector3.forward;
                 // Debug.DrawLine(transform.position, transform.position + tempForward, Color.magenta);
             }
@@ -367,7 +365,7 @@ public class ClimbShape : MonoBehaviour
                 if (!depenetratePass)
                 {
                     //     Debug.Log("Final Pass2");
-                    _afterDepenetrateRotation = Quaternion.LookRotation(Vector3.ProjectOnPlane(tempForward, Vector3.up).normalized, Vector3.up);
+                    _afterDepenetrateRotation = Quaternion.LookRotation(Vector3.ProjectOnPlane(forwardFromRecordedBarycentric, Vector3.up).normalized, Vector3.up);
 
                 }
                 if (isFinalPass)
@@ -406,7 +404,7 @@ public class ClimbShape : MonoBehaviour
 
         bool depenetrate = false;
         bool slide = false;
-        float distance = direction.magnitude * _targetSpeed * Time.deltaTime;
+        float distance = directionInput.magnitude * _targetSpeed * Time.deltaTime;
 
         if (depenetratePass)
         {
@@ -445,23 +443,23 @@ public class ClimbShape : MonoBehaviour
                 distance *= 1f;
 
                 // distance = totalDepenetrationDirection.magnitude * 0.9f;
-                tempForward = totalDepenetrationDirection.normalized;
+                forwardFromRecordedBarycentric = totalDepenetrationDirection.normalized;
 
-                _moveDirection = tempForward;
-                newDirection = tempForward;
-                _input = tempForward;
+                _moveDirection = forwardFromRecordedBarycentric;
+                newDirection = forwardFromRecordedBarycentric;
+                _input = forwardFromRecordedBarycentric;
                 depenetrate = true;
-                _plane = new Plane(Mathf2.RotateAroundAxis(tempForward, transform.up, 90), transform.position);
+                _plane = new Plane(Mathf2.RotateAroundAxis(forwardFromRecordedBarycentric, transform.up, 90), transform.position);
             }
             else
             {
                 // distance = totalDepenetrationDirection.magnitude * 0.9f;
-                tempForward = totalDepenetrationDirection.normalized;
+                forwardFromRecordedBarycentric = totalDepenetrationDirection.normalized;
 
-                _moveDirection = tempForward;
-                newDirection = tempForward;
-                _input = tempForward;
-                _plane = new Plane(Mathf2.RotateAroundAxis(tempForward, transform.up, 90), transform.position);
+                _moveDirection = forwardFromRecordedBarycentric;
+                newDirection = forwardFromRecordedBarycentric;
+                _input = forwardFromRecordedBarycentric;
+                _plane = new Plane(Mathf2.RotateAroundAxis(forwardFromRecordedBarycentric, transform.up, 90), transform.position);
                 // Debug.Log("Collision not Found");
             }
         }
@@ -1451,13 +1449,13 @@ public class ClimbShape : MonoBehaviour
         //    Debug.DrawLine(transform.position, transform.position + plane.normal, Color.blue);
 
 
-        if (getNewtempForwardDirection != Vector3.zero)
+        if (forwardFromRecordedBarycentric != Vector3.zero)
         {
-            _lastForward = getNewtempForwardDirection;
+            _forwardLastFrame = forwardFromRecordedBarycentric;
         }
         else
         {
-            _lastForward = CharacterModel.forward;
+            _forwardLastFrame = CharacterModel.forward;
         }
 
         // Debug.DrawLine(CharacterModel.position, CharacterModel.position + CharacterModel.forward, Color.red);
