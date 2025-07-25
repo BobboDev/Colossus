@@ -644,9 +644,8 @@ public class ClimbShape : MonoBehaviour
                         nextEdgeOnThisTriangle.pointB = currentCornerInt;
                     }
                     // If the next edge is another outside edge on the same triangle, switch to that. 
-                    if (_cm.EdgeAdjacencyInfo.ContainsKey(nextEdgeOnThisTriangle) && _cm.EdgeAdjacencyInfo[nextEdgeOnThisTriangle].triangleA == _cm.EdgeAdjacencyInfo[nextEdgeOnThisTriangle].triangleB)
+                    if (_cm.EdgeAdjacencyInfo.ContainsKey(nextEdgeOnThisTriangle) && nextEdgeOnThisTriangle.IsOuterEdge(_cm))
                     {
-
                         _currentEdgePoints.Set(nextEdgeOnThisTriangle.pointA, nextEdgeOnThisTriangle.pointB, currentCornerIntOther);
 
                         Ray tempRay = CreateRay(_newPosition, movePositionAttempt);
@@ -784,8 +783,7 @@ public class ClimbShape : MonoBehaviour
                         {
                             foreach (Edge e in _cm.EdgesAttachedToCorner[_cornerReached])
                             {
-                                if (!(_cm.Vertices[e.pointA] == _cm.Vertices[_currentEdgePoints.Start] && _cm.Vertices[e.pointB] == _cm.Vertices[_currentEdgePoints.End]) &&
-                                    !(_cm.Vertices[e.pointA] == _cm.Vertices[_currentEdgePoints.End] && _cm.Vertices[e.pointB] == _cm.Vertices[_currentEdgePoints.Start]))
+                                if (!e.IsIdenticalToByPosition(GetEdgeFromEdgePoints(_currentEdgePoints), _cm))
                                 {
                                     tempEdges.Add(e);
                                     count++;
@@ -879,8 +877,8 @@ public class ClimbShape : MonoBehaviour
                                     break;
                                 }
                             }
-
-                            cornerEdgeOther1 = GetOtherVertexIndex(cornerEdge);
+                            if (GetOtherVertexIndex(cornerEdge) != -1)
+                                cornerEdgeOther1 = GetOtherVertexIndex(cornerEdge);
 
                             triCenterTemp1 = (_cm.Vertices[cornerEdge.pointA] + _cm.Vertices[cornerEdge.pointB] + _cm.Vertices[cornerEdgeOther1]) / 3;
                             cornerEdgeNormalTemp1 = (triCenterTemp1 - Mathf2.NearestPointOnLine(_cm.Vertices[cornerEdge.pointA], (_cm.Vertices[cornerEdge.pointA] - _cm.Vertices[cornerEdge.pointB]).normalized, triCenterTemp1)).normalized;
@@ -901,8 +899,7 @@ public class ClimbShape : MonoBehaviour
 
                                     if (edgeTriangleA == triangleCheckCorner && !edgeFound)
                                     {
-                                        if (!(_cm.Vertices[e.pointA] == _cm.Vertices[firstEdgeCrossed.pointA] && _cm.Vertices[e.pointB] == _cm.Vertices[firstEdgeCrossed.pointB] ||
-                                            _cm.Vertices[e.pointA] == _cm.Vertices[firstEdgeCrossed.pointB] && _cm.Vertices[e.pointB] == _cm.Vertices[firstEdgeCrossed.pointA]))
+                                        if (!e.IsIdenticalToByPosition(firstEdgeCrossed, _cm))
                                         {
                                             if (edgeTriangleA == edgeTriangleB)
                                             {
@@ -921,8 +918,7 @@ public class ClimbShape : MonoBehaviour
                                     }
                                     else if (edgeTriangleB == triangleCheckCorner && !edgeFound)
                                     {
-                                        if (!(_cm.Vertices[e.pointA] == _cm.Vertices[firstEdgeCrossed.pointA] && _cm.Vertices[e.pointB] == _cm.Vertices[firstEdgeCrossed.pointB] ||
-                                            _cm.Vertices[e.pointA] == _cm.Vertices[firstEdgeCrossed.pointB] && _cm.Vertices[e.pointB] == _cm.Vertices[firstEdgeCrossed.pointA]))
+                                        if (!e.IsIdenticalToByPosition(firstEdgeCrossed, _cm))
                                         {
                                             if (edgeTriangleA == edgeTriangleB)
                                             {
@@ -948,7 +944,8 @@ public class ClimbShape : MonoBehaviour
                                 }
                             }
 
-                            cornerEdgeOther1 = GetOtherVertexIndex(cornerEdge);
+                            if (GetOtherVertexIndex(cornerEdge) != -1)
+                                cornerEdgeOther1 = GetOtherVertexIndex(cornerEdge);
 
                             triCenterTemp2 = (_cm.Vertices[cornerEdge2.pointA] + _cm.Vertices[cornerEdge2.pointB] + _cm.Vertices[cornerEdgeOther2]) / 3;
                             cornerEdgeNormalTemp2 = (triCenterTemp2 - Mathf2.NearestPointOnLine(_cm.Vertices[cornerEdge2.pointA], (_cm.Vertices[cornerEdge2.pointA] - _cm.Vertices[cornerEdge2.pointB]).normalized, triCenterTemp2)).normalized;
@@ -1022,8 +1019,7 @@ public class ClimbShape : MonoBehaviour
                                 bool tempEdgesContainsEdge = false;
                                 foreach (Edge edgeToCheck in tempEdges)
                                 {
-                                    if (_cm.Vertices[e.pointA] == _cm.Vertices[edgeToCheck.pointA] && _cm.Vertices[e.pointB] == _cm.Vertices[edgeToCheck.pointB]
-                                     || _cm.Vertices[e.pointA] == _cm.Vertices[edgeToCheck.pointB] && _cm.Vertices[e.pointB] == _cm.Vertices[edgeToCheck.pointA])
+                                    if (e.IsIdenticalToByPosition(edgeToCheck, _cm))
                                     {
                                         tempEdgesContainsEdge = true;
                                     }
@@ -1031,8 +1027,7 @@ public class ClimbShape : MonoBehaviour
                                 bool checkedEdgesCornerContainsEdge = false;
                                 foreach (Edge edgeToCheck in checkedEdgesCorner)
                                 {
-                                    if (_cm.Vertices[e.pointA] == _cm.Vertices[edgeToCheck.pointA] && _cm.Vertices[e.pointB] == _cm.Vertices[edgeToCheck.pointB]
-                                     || _cm.Vertices[e.pointA] == _cm.Vertices[edgeToCheck.pointB] && _cm.Vertices[e.pointB] == _cm.Vertices[edgeToCheck.pointA])
+                                    if (e.IsIdenticalToByPosition(edgeToCheck, _cm))
                                     {
                                         checkedEdgesCornerContainsEdge = true;
                                     }
@@ -1086,8 +1081,7 @@ public class ClimbShape : MonoBehaviour
                                         }
                                         foreach (Edge e2 in _cm.TriangleAdjacencyInfo[cornerTriangleIndex].edges)
                                         {
-                                            if (_cm.Vertices[e2.pointA] == _cm.Vertices[e.pointA] && _cm.Vertices[e2.pointB] == _cm.Vertices[e.pointB]
-                                            || _cm.Vertices[e2.pointA] == _cm.Vertices[e.pointA] && _cm.Vertices[e2.pointB] == _cm.Vertices[e.pointB])
+                                            if (e.IsIdenticalToByPosition(e2, _cm))
                                             {
                                                 if (!checkedEdgesCorner.Contains(e2))
                                                 {
@@ -1126,8 +1120,7 @@ public class ClimbShape : MonoBehaviour
                                 bool tempEdgesContainsEdge = false;
                                 foreach (Edge edgeToCheck in tempEdges)
                                 {
-                                    if (_cm.Vertices[e.pointA] == _cm.Vertices[edgeToCheck.pointA] && _cm.Vertices[e.pointB] == _cm.Vertices[edgeToCheck.pointB]
-                                     || _cm.Vertices[e.pointA] == _cm.Vertices[edgeToCheck.pointB] && _cm.Vertices[e.pointB] == _cm.Vertices[edgeToCheck.pointA])
+                                    if (e.IsIdenticalToByPosition(edgeToCheck, _cm))
                                     {
                                         tempEdgesContainsEdge = true;
                                     }
@@ -1135,8 +1128,7 @@ public class ClimbShape : MonoBehaviour
                                 bool checkedEdgesContainsEdge = false;
                                 foreach (Edge edgeToCheck in checkedEdges)
                                 {
-                                    if (_cm.Vertices[e.pointA] == _cm.Vertices[edgeToCheck.pointA] && _cm.Vertices[e.pointB] == _cm.Vertices[edgeToCheck.pointB]
-                                     || _cm.Vertices[e.pointA] == _cm.Vertices[edgeToCheck.pointB] && _cm.Vertices[e.pointB] == _cm.Vertices[edgeToCheck.pointA])
+                                    if (e.IsIdenticalToByPosition(edgeToCheck, _cm))
                                     {
                                         checkedEdgesContainsEdge = true;
                                     }
@@ -1145,7 +1137,7 @@ public class ClimbShape : MonoBehaviour
                                 if (tempEdgesContainsEdge && !checkedEdgesContainsEdge)
                                 {
                                     // and it's an outside edge
-                                    if (_cm.EdgeAdjacencyInfo[e].triangleA == _cm.EdgeAdjacencyInfo[e].triangleB)
+                                    if (e.IsOuterEdge(_cm))
                                     {
                                         foundNextEdge = true;
                                         _previousLastIndex = _lastIndex;
@@ -1159,17 +1151,9 @@ public class ClimbShape : MonoBehaviour
                                         _lastIndex = tempLastIndex;
                                         _index = tempIndex;
 
-                                        foreach (Edge p in _cm.TriangleAdjacencyInfo[_index].edges)
-                                        {
-                                            if (_cm.Vertices[p.pointA] != _cm.Vertices[_currentEdgePoints.Start] && _cm.Vertices[p.pointA] != _cm.Vertices[_currentEdgePoints.End])
-                                            {
-                                                _currentEdgePoints.Other = p.pointA;
-                                            }
-                                            else if (_cm.Vertices[p.pointB] != _cm.Vertices[_currentEdgePoints.Start] && _cm.Vertices[p.pointB] != _cm.Vertices[_currentEdgePoints.End])
-                                            {
-                                                _currentEdgePoints.Other = p.pointB;
-                                            }
-                                        }
+                                        Edge outsideEdge = new() { pointA = e.pointA, pointB = e.pointB, triangleA = _cm.EdgeAdjacencyInfo[e].triangleA, triangleB = _cm.EdgeAdjacencyInfo[e].triangleB };
+
+                                        SetOtherEdgePointFromTriangleIndex(ref _currentEdgePoints, _index);
 
                                         triCenter = (_cm.Vertices[_currentEdgePoints.Start] + _cm.Vertices[_currentEdgePoints.End] + _cm.Vertices[_currentEdgePoints.Other]) / 3;
                                         closestPointOnEdge = Mathf2.NearestPointOnLine(_cm.Vertices[_currentEdgePoints.Start], (_cm.Vertices[_currentEdgePoints.Start] - _cm.Vertices[_currentEdgePoints.End]).normalized, triCenter);
@@ -1249,9 +1233,9 @@ public class ClimbShape : MonoBehaviour
                                     }
                                     else
                                     {
-                                        int nextTriLastEdgeStart = -1;
-                                        int nextTriLastEdgeEnd = -1;
-                                        int nextTriLastEdgeOther = -1;
+                                        EdgePoints nextTriCurrentEdge = new();
+                                        nextTriCurrentEdge.Set(-1, -1, -1);
+
                                         // else switch to the tri on the other side of the edge
                                         tempLastIndex = tempIndex;
                                         if (tempIndex == _cm.EdgeAdjacencyInfo[e].triangleA)
@@ -1265,35 +1249,27 @@ public class ClimbShape : MonoBehaviour
                                         checkedEdges.Add(e);
                                         if (_cm.Vertices[e.pointA] == _cm.Vertices[_cornerReached])
                                         {
-                                            nextTriLastEdgeStart = e.pointA;
-                                            nextTriLastEdgeEnd = e.pointB;
+                                            nextTriCurrentEdge.Start = e.pointA;
+                                            nextTriCurrentEdge.End = e.pointB;
                                         }
                                         else
                                         {
-                                            nextTriLastEdgeStart = e.pointB;
-                                            nextTriLastEdgeEnd = e.pointA;
+                                            nextTriCurrentEdge.Start = e.pointB;
+                                            nextTriCurrentEdge.End = e.pointA;
                                         }
-                                        foreach (Edge e2 in _cm.TriangleAdjacencyInfo[tempIndex].edges)
-                                        {
-                                            if (_cm.Vertices[e2.pointA] != _cm.Vertices[nextTriLastEdgeStart] && _cm.Vertices[e2.pointA] != _cm.Vertices[nextTriLastEdgeEnd])
-                                            {
-                                                nextTriLastEdgeOther = e2.pointA;
-                                            }
-                                            if (_cm.Vertices[e2.pointB] != _cm.Vertices[nextTriLastEdgeStart] && _cm.Vertices[e2.pointB] != _cm.Vertices[nextTriLastEdgeEnd])
-                                            {
-                                                nextTriLastEdgeOther = e2.pointB;
-                                            }
-                                        }
+
+                                        SetOtherEdgePointFromTriangleIndex(ref nextTriCurrentEdge, _index);
+
 
                                         // check if we are pointing towards the other edge (not the next edge attached to corner)
                                         // if so, we can come unstuck.
 
-                                        if (GetFarEdgeCut(_cornerReached, tempIndex, nextTriLastEdgeStart, nextTriLastEdgeEnd, nextTriLastEdgeOther, cornerEdgeStart, cornerEdgeEnd, cornerEdgeOther, _plane))
+                                        if (GetFarEdgeCut(_cornerReached, tempIndex, nextTriCurrentEdge.Start, nextTriCurrentEdge.End, nextTriCurrentEdge.Other, cornerEdgeStart, cornerEdgeEnd, cornerEdgeOther, _plane))
                                         {
                                             // Debug.DrawLine("BUH");
                                             _index = tempIndex;
                                             _lastIndex = tempLastIndex;
-                                            _currentEdgePoints.Set(nextTriLastEdgeEnd, nextTriLastEdgeStart, nextTriLastEdgeOther);
+                                            _currentEdgePoints.Set(nextTriCurrentEdge.End, nextTriCurrentEdge.Start, nextTriCurrentEdge.Other);
 
                                             // Debug.DrawLine(cm.meshVerts[lastEdgeStart],cm.meshVerts[lastEdgeStart] + Vector3.up, Color.green);
                                             // Debug.DrawLine(cm.meshVerts[lastEdgeEnd],cm.meshVerts[lastEdgeEnd] + Vector3.up, Color.blue);
@@ -1675,6 +1651,40 @@ public class ClimbShape : MonoBehaviour
         );
     }
 
+    Edge GetEdgeFromEdgePoints(EdgePoints edgePoints)
+    {
+        Edge edge = new Edge();
+
+        // Ensure pointA < pointB to match the key format used in EdgeAdjacencyInfo
+        int a = edgePoints.Start;
+        int b = edgePoints.End;
+        if (a < b)
+        {
+            edge.pointA = a;
+            edge.pointB = b;
+        }
+        else
+        {
+            edge.pointA = b;
+            edge.pointB = a;
+        }
+
+        // Try get triangle info from the EdgeAdjacencyInfo
+        if (_cm.EdgeAdjacencyInfo.TryGetValue(edge, out var edgeInfo))
+        {
+            edge.triangleA = edgeInfo.triangleA;
+            edge.triangleB = edgeInfo.triangleB;
+        }
+        else
+        {
+            Debug.LogWarning($"Edge ({edge.pointA}, {edge.pointB}) not found in EdgeAdjacencyInfo.");
+            edge.triangleA = -1;
+            edge.triangleB = -1;
+        }
+
+        return edge;
+    }
+
     /// <summary>
     /// Finds the vertex index among p1, p2, p3 that matches the target vertex by position.
     /// </summary>
@@ -1736,12 +1746,12 @@ public class ClimbShape : MonoBehaviour
             // Debug.Log(e.triangleA);
             // Debug.Log(e.triangleB);
             // Get the edge of the three that is equal to the edge that has just been passed
-            bool edgeMatches = (_cm.Vertices[e.pointA] == _cm.Vertices[_currentEdgePoints.Start] && _cm.Vertices[e.pointB] == _cm.Vertices[_currentEdgePoints.End]) ||
+            bool edgeMatchesPassedEdgeByPosition = (_cm.Vertices[e.pointA] == _cm.Vertices[_currentEdgePoints.Start] && _cm.Vertices[e.pointB] == _cm.Vertices[_currentEdgePoints.End]) ||
                 (_cm.Vertices[e.pointA] == _cm.Vertices[_currentEdgePoints.End] && _cm.Vertices[e.pointB] == _cm.Vertices[_currentEdgePoints.Start]);
 
-            if (edgeMatches)
+            if (edgeMatchesPassedEdgeByPosition)
             {
-                int nextTriangle = _cm.EdgeAdjacencyInfo[e].triangleA == _cm.EdgeAdjacencyInfo[e].triangleB
+                int nextTriangle = e.IsOuterEdge(_cm)
                     ? _cm.EdgeAdjacencyInfo[e].triangleA // If adjacent triangles are the same, return the same triangle
                     : _cm.EdgeAdjacencyInfo[e].triangleA != _index
                         ? _cm.EdgeAdjacencyInfo[e].triangleA // If edge has two triangles and the first is not equal to the current triangle, return that
@@ -1860,6 +1870,18 @@ public class ClimbShape : MonoBehaviour
         }
 
         return -1; // Fallback if not found
+    }
+
+    void SetOtherEdgePointFromTriangleIndex(ref EdgePoints edgePoints, int triangleIndex)
+    {
+        foreach (Edge p in _cm.TriangleAdjacencyInfo[triangleIndex].edges)
+        {
+            if (_cm.Vertices[p.pointA] != _cm.Vertices[edgePoints.Start] && _cm.Vertices[p.pointA] != _cm.Vertices[edgePoints.End])
+                edgePoints.Other = p.pointA;
+            if (_cm.Vertices[p.pointB] != _cm.Vertices[edgePoints.Start] && _cm.Vertices[p.pointB] != _cm.Vertices[edgePoints.End])
+                edgePoints.Other = p.pointB;
+        }
+
     }
 
     void DebugTriangle(int triangle, Color color)

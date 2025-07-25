@@ -48,7 +48,7 @@ public static class ClimbableMeshExtensions
         {
             foreach (Edge cornerEdgeBeingChecked in climbableMesh.EdgesAttachedToCorner[cornerIndex])
             {
-                if (cornerEdgeBeingChecked.EdgeIsOutsideEdge())
+                if (cornerEdgeBeingChecked.IsOuterEdge(climbableMesh))
                 {
                     edgeFound = true;
                     return cornerEdgeBeingChecked;

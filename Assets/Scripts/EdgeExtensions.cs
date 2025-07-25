@@ -5,10 +5,10 @@ using UnityEngine;
 
 public static class EdgeExtensions
 {
-    public static bool EdgeIsOutsideEdge(this Edge edge)
+    public static bool IsOuterEdge(this Edge edge, ClimbableMesh cm)
     {
-        int firstTriAdjacentToEdge = edge.triangleA;
-        int secondTriAdjacentToEdge = edge.triangleB;
+        int firstTriAdjacentToEdge = cm.EdgeAdjacencyInfo[edge].triangleA;
+        int secondTriAdjacentToEdge = cm.EdgeAdjacencyInfo[edge].triangleB;
 
         return firstTriAdjacentToEdge == secondTriAdjacentToEdge;
     }
@@ -46,20 +46,7 @@ public static class EdgeExtensions
 
     public static bool IsIdenticalToByPosition(this Edge edge, Edge edgeToCompare, ClimbableMesh climbableMesh)
     {
-        Vector3 firstVertexPositionOfEdge = climbableMesh.Vertices[edge.pointA];
-        Vector3 secondVertexPositionOfEdge = climbableMesh.Vertices[edge.pointB];
-
-        Vector3 firstVertexPositionOfEdgeToCompare = climbableMesh.Vertices[edgeToCompare.pointA];
-        Vector3 secondVertexPositionOfEdgeToCompare = climbableMesh.Vertices[edgeToCompare.pointB];
-
-        bool pointAIsPointACompare = firstVertexPositionOfEdge == firstVertexPositionOfEdgeToCompare;
-        bool pointBIsPointBCompare = secondVertexPositionOfEdge == secondVertexPositionOfEdgeToCompare;
-
-        bool pointAIsPointBCompare = firstVertexPositionOfEdge == secondVertexPositionOfEdgeToCompare;
-        bool pointBIsPointACompare = secondVertexPositionOfEdge == firstVertexPositionOfEdgeToCompare;
-
-        bool edgesAreIdentical = pointAIsPointACompare && pointBIsPointBCompare || pointAIsPointBCompare && pointBIsPointACompare;
-
-        return edgesAreIdentical;
+        return (climbableMesh.Vertices[edge.pointA] == climbableMesh.Vertices[edgeToCompare.pointA] && climbableMesh.Vertices[edge.pointB] == climbableMesh.Vertices[edgeToCompare.pointB]) ||
+               (climbableMesh.Vertices[edge.pointA] == climbableMesh.Vertices[edgeToCompare.pointB] && climbableMesh.Vertices[edge.pointB] == climbableMesh.Vertices[edgeToCompare.pointA]);
     }
 }
