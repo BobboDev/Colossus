@@ -1165,11 +1165,9 @@ public class ClimbShape : MonoBehaviour
             }
         }
 
-        // END REFACTOR
 
         // testing measurements, line should jitter if deltatime is wrong.
         // Debug.DrawLine(transform.position, newPosition, Color.red);
-        // newPosition = transform.position;
 
         _barycentricCoordinate = Mathf2.GetBarycentricCoordinates(_newPosition, _cm.Vertices[_currentEdgePoints.Start], _cm.Vertices[_currentEdgePoints.End], _cm.Vertices[_currentEdgePoints.Other]);
 
@@ -1196,7 +1194,6 @@ public class ClimbShape : MonoBehaviour
             _testPlane = new Plane(-(Quaternion.FromToRotation(transform.up, groundNormal) * transform.right), triCenter);
             if (isFinalPass)
                 _testPlane = new Plane(-CharacterModel.right, triCenter);
-            // Debug.DrawLine(ch)
         }
         _testCut = Vector3.zero;
         _testCut = FindTrianglePlaneIntersection(_currentEdgePoints, _castDirectionTest, triCenter, _testPlane, CutType.Test);
@@ -1325,21 +1322,8 @@ public class ClimbShape : MonoBehaviour
         return _cm.transform.TransformDirection(_cm.Normals[normalIndex]);
     }
 
-    ////////////////////
-    // REFACTOR Start //
-    ////////////////////
 
-    /// <summary>
     /// Finds the next intersection point between a plane and a triangle's edges as part of a cutting operation.
-    /// </summary>
-    /// <param name="p1">First vertex index of the triangle.</param>
-    /// <param name="p2">Second vertex index of the triangle.</param>
-    /// <param name="p3">Third vertex index of the triangle.</param>
-    /// <param name="direction">Direction vector used to validate intersection points.</param>
-    /// <param name="position">Current position for directional checks.</param>
-    /// <param name="plane">Plane to intersect with the triangle's edges.</param>
-    /// <param name="cutType">Type of cut operation: Start (initial cut), Next (subsequent cut), or Test (check without state update).</param>
-    /// <returns>The intersection point if found; otherwise, the current position.</returns>
     Vector3 FindTrianglePlaneIntersection(EdgePoints edgePoints, Vector3 direction, Vector3 position, Plane plane, CutType cutType)
     {
         // Update tracking of the previous edge when moving to a new triangle (except in Test or Start modes)
@@ -1383,9 +1367,7 @@ public class ClimbShape : MonoBehaviour
         return result;
     }
 
-    /// <summary>
-    /// Orders triangle vertices based on the cut type, aligning with the previous edge for CutType.Next.
-    /// </summary>
+    // Orders triangle vertices based on the cut type, aligning with the previous edge for CutType.Next.
     private (int vertexA, int vertexB, int vertexC) OrderVerticesForCut(int p1, int p2, int p3, CutType cutType)
     {
         if (cutType == CutType.Next && _lastIndex != _index)
@@ -1399,9 +1381,7 @@ public class ClimbShape : MonoBehaviour
         return (p1, p2, p3); // Default order for Start or Test
     }
 
-    /// <summary>
-    /// Computes ray data (ray, length, intersection distance) for each edge against the plane.
-    /// </summary>
+    // Computes ray data (ray, length, intersection distance) for each edge against the plane.
     private (Ray ray, float length, float hitDistance)[] ComputeRayDataForEdges((int start, int end, int other)[] edges, Plane plane)
     {
         var rayData = new (Ray ray, float length, float hitDistance)[3];
@@ -1418,9 +1398,7 @@ public class ClimbShape : MonoBehaviour
         return rayData;
     }
 
-    /// <summary>
-    /// Processes an edge to find and validate an intersection with the plane, updating the result if accepted.
-    /// </summary>
+    // Processes an edge to find and validate an intersection with the plane, updating the result if accepted.
     private void ProcessEdgeIntersection((int start, int end, int other) edge,
                                         (Ray ray, float length, float hitDistance) rayData,
                                         (int start, int end, int other)[] edges, // Added parameter
@@ -1454,9 +1432,7 @@ public class ClimbShape : MonoBehaviour
         }
     }
 
-    /// <summary>
-    /// Updates the last edge state variables if not in Test mode.
-    /// </summary>
+    // Updates the last edge state variables if not in Test mode.
     private void UpdateEdgeState((int start, int end, int other) edge, CutType cutType,
                                 ref bool hasIntersection, bool isFirstEdge)
     {
@@ -1468,9 +1444,7 @@ public class ClimbShape : MonoBehaviour
         }
     }
 
-    /// <summary>
-    /// Updates last edge indices to match the current triangle's vertices.
-    /// </summary>
+    // Updates last edge indices to match the current triangle's vertices.
     private void UpdateEdgeIndices(int p1, int p2, int p3)
     {
         _currentEdgePoints.Set(
@@ -1480,9 +1454,7 @@ public class ClimbShape : MonoBehaviour
         );
     }
 
-    /// <summary>
-    /// Finds the vertex index among p1, p2, p3 that matches the target vertex by position.
-    /// </summary>
+    // Finds the vertex index among p1, p2, p3 that matches the target vertex by position.
     private int MatchVertexByPosition(int target, int p1, int p2, int p3)
     {
         if (_cm.Vertices[p1] == _cm.Vertices[target]) return p1;
@@ -1491,9 +1463,7 @@ public class ClimbShape : MonoBehaviour
         return p1; // Fallback to p1 if no match (assumes a match should exist)
     }
 
-    /// <summary>
-    /// Validates an intersection, including extended conditions beyond the edge length.
-    /// </summary>
+    // Validates an intersection, including extended conditions beyond the edge length.
     private bool IsIntersectionValid(float hitDistance, float rayLength,
                                     (Ray ray, float length, float hitDistance)[] rayData, int index)
     {
@@ -1510,9 +1480,7 @@ public class ClimbShape : MonoBehaviour
                (hitDistance > rayLength && hit2 > len2 && hit1 < len1 && hit1 > 0);
     }
 
-    /// <summary>
-    /// Determines if an intersection point should be accepted based on cut type and direction.
-    /// </summary>
+    // Determines if an intersection point should be accepted based on cut type and direction.
     private bool ShouldAcceptIntersection(CutType cutType, Vector3 direction,
                                          Vector3 position, Vector3 intersectionPoint)
     {
