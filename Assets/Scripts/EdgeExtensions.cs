@@ -3,34 +3,87 @@ using System.Collections.Generic;
 using Overhang;
 using UnityEngine;
 
-public static class EdgeExtensions
+public class EdgeExtensions
 {
-    public static bool EdgeIsOutsideEdge(this Edge edge)
+    public static void FindMatchingEdgePointsOnTriangle(int triangleIndex, EdgePoints points, ref EdgePoints pointsOut, ClimbableMesh cm)
     {
-        int firstTriAdjacentToEdge = edge.triangleA;
-        int secondTriAdjacentToEdge = edge.triangleB;
+        int start = -1;
+        int end = -1;
+
+        foreach (Edge e in cm.TriangleAdjacencyInfo[triangleIndex].edges)
+        {
+            if (start == -1)
+            {
+                if (cm.Vertices[points.Start] == cm.Vertices[e.pointA])
+                    start = e.pointA;
+                else if (cm.Vertices[points.Start] == cm.Vertices[e.pointB])
+                    start = e.pointB;
+            }
+
+            if (end == -1)
+            {
+                if (cm.Vertices[points.End] == cm.Vertices[e.pointA])
+                    end = e.pointA;
+                else if (cm.Vertices[points.End] == cm.Vertices[e.pointB])
+                    end = e.pointB;
+            }
+        }
+
+        // Fallbacks using 'Other' if needed
+        foreach (Edge e in cm.TriangleAdjacencyInfo[triangleIndex].edges)
+        {
+            if (start == -1)
+            {
+                if (cm.Vertices[points.Other] == cm.Vertices[e.pointA])
+                    start = e.pointA;
+                else if (cm.Vertices[points.Other] == cm.Vertices[e.pointB])
+                    start = e.pointB;
+            }
+
+            if (end == -1)
+            {
+                if (cm.Vertices[points.Other] == cm.Vertices[e.pointA])
+                    end = e.pointA;
+                else if (cm.Vertices[points.Other] == cm.Vertices[e.pointB])
+                    end = e.pointB;
+            }
+        }
+
+        pointsOut.Set(start, end, -1);
+    }
+
+
+    public static bool EdgeIsOutsideEdgeByPosition(Edge edge, ClimbableMesh cm)
+    {
+        int firstTriAdjacentToEdge = cm.EdgeAdjacencyInfo[edge].triangleA;
+        int secondTriAdjacentToEdge = cm.EdgeAdjacencyInfo[edge].triangleB;
 
         return firstTriAdjacentToEdge == secondTriAdjacentToEdge;
     }
 
-    public static int FindVertexNotOnEdge(this ClimbableMesh climbableMesh, AdjacentEdges edges, Edge edgeToCompare)
+    public static bool EdgesMatchByPosition(Edge edgeA, Edge edgeB, ClimbableMesh cm)
     {
-        int vertexNotOnWall = -1;
-        foreach (Edge e in edges.edges)
-        {
-            if (climbableMesh.Vertices[e.pointA] != climbableMesh.Vertices[edgeToCompare.pointA] && climbableMesh.Vertices[e.pointA] != climbableMesh.Vertices[edgeToCompare.pointB])
-            {
-                vertexNotOnWall = e.pointA;
-            }
-            else if (climbableMesh.Vertices[e.pointB] != climbableMesh.Vertices[edgeToCompare.pointA] && climbableMesh.Vertices[e.pointB] != climbableMesh.Vertices[edgeToCompare.pointB])
-            {
-                vertexNotOnWall = e.pointB;
-            }
-        }
-        return vertexNotOnWall;
+        Vector3 a1 = cm.Vertices[edgeA.pointA];
+        Vector3 a2 = cm.Vertices[edgeA.pointB];
+        Vector3 b1 = cm.Vertices[edgeB.pointA];
+        Vector3 b2 = cm.Vertices[edgeB.pointB];
+        return (a1 == b1 && a2 == b2) || (a1 == b2 && a2 == b1);
     }
 
-    public static int GetOtherTriangleOnEdge(this Edge edge, int currentTriangleIndex)
+    public static int GetOtherVertexIndex(Edge cornerEdge, ClimbableMesh _cm)
+    {
+        foreach (Edge e in _cm.TriangleAdjacencyInfo[_cm.EdgeAdjacencyInfo[cornerEdge].triangleA].edges)
+        {
+            if (_cm.Vertices[e.pointA] != _cm.Vertices[cornerEdge.pointA] && _cm.Vertices[e.pointA] != _cm.Vertices[cornerEdge.pointB])
+                return e.pointA;
+            if (_cm.Vertices[e.pointB] != _cm.Vertices[cornerEdge.pointA] && _cm.Vertices[e.pointB] != _cm.Vertices[cornerEdge.pointB])
+                return e.pointB;
+        }
+
+        return -1;
+    }
+
+    public static int GetOtherTriangleOnEdge(Edge edge, int currentTriangleIndex)
     {
         int firstTriAdjacentToEdge = edge.triangleA;
         int secondTriAdjacentToEdge = edge.triangleB;
@@ -43,23 +96,26 @@ public static class EdgeExtensions
 
         return 0;
     }
+}
 
-    public static bool IsIdenticalToByPosition(this Edge edge, Edge edgeToCompare, ClimbableMesh climbableMesh)
+public struct EdgePoints
+{
+    public int Start;
+    public int End;
+    public int Other;
+
+    public EdgePoints(bool initialize = true)
     {
-        Vector3 firstVertexPositionOfEdge = climbableMesh.Vertices[edge.pointA];
-        Vector3 secondVertexPositionOfEdge = climbableMesh.Vertices[edge.pointB];
-
-        Vector3 firstVertexPositionOfEdgeToCompare = climbableMesh.Vertices[edgeToCompare.pointA];
-        Vector3 secondVertexPositionOfEdgeToCompare = climbableMesh.Vertices[edgeToCompare.pointB];
-
-        bool pointAIsPointACompare = firstVertexPositionOfEdge == firstVertexPositionOfEdgeToCompare;
-        bool pointBIsPointBCompare = secondVertexPositionOfEdge == secondVertexPositionOfEdgeToCompare;
-
-        bool pointAIsPointBCompare = firstVertexPositionOfEdge == secondVertexPositionOfEdgeToCompare;
-        bool pointBIsPointACompare = secondVertexPositionOfEdge == firstVertexPositionOfEdgeToCompare;
-
-        bool edgesAreIdentical = pointAIsPointACompare && pointBIsPointBCompare || pointAIsPointBCompare && pointBIsPointACompare;
-
-        return edgesAreIdentical;
+        Start = -1;
+        End = -1;
+        Other = -1;
     }
+
+    public void Set(int start, int end, int other)
+    {
+        Start = start;
+        End = end;
+        Other = other;
+    }
+
 }

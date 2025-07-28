@@ -643,7 +643,7 @@ public class ClimbShape : MonoBehaviour
                         nextEdgeOnThisTriangle.pointB = currentCornerInt;
                     }
                     // If the next edge is another outside edge on the same triangle, switch to that. 
-                    if (_cm.EdgeAdjacencyInfo.ContainsKey(nextEdgeOnThisTriangle) && _cm.EdgeAdjacencyInfo[nextEdgeOnThisTriangle].triangleA == _cm.EdgeAdjacencyInfo[nextEdgeOnThisTriangle].triangleB)
+                    if (_cm.EdgeAdjacencyInfo.ContainsKey(nextEdgeOnThisTriangle) && EdgeExtensions.EdgeIsOutsideEdgeByPosition(nextEdgeOnThisTriangle, _cm))
                     {
 
                         _currentEdgePoints.Set(nextEdgeOnThisTriangle.pointA, nextEdgeOnThisTriangle.pointB, currentCornerIntOther);
@@ -693,60 +693,12 @@ public class ClimbShape : MonoBehaviour
 
                         Edge checkIsOnEdge = new();
 
-                        int lastEdgeStartRealTemp = -1;
-                        int lastEdgeEndRealTemp = -1;
-                        Debug.Log(_index);
-                        // check the next triangle's edges, we're setting lastEdgeStartRealTemp, lastEdgeStartEndTemp, lastEdgeOtherRealTemp because we don't want to override lastEdgeStartReal etc
-                        foreach (Edge e in _cm.TriangleAdjacencyInfo[_index].edges)
-                        {
+                        EdgePoints currentEdgeRealTemp = new();
 
-                            // if the positions of the points on the line we crossed match the edge of the triangle being compared currently, store it
-                            if (_cm.Vertices[_currentEdgePoints.Start] == _cm.Vertices[e.pointA])
-                            {
-                                lastEdgeStartRealTemp = e.pointA;
-                            }
-                            if (_cm.Vertices[_currentEdgePoints.Start] == _cm.Vertices[e.pointB])
-                            {
-                                lastEdgeStartRealTemp = e.pointB;
-                            }
-                            if (_cm.Vertices[_currentEdgePoints.End] == _cm.Vertices[e.pointA])
-                            {
-                                lastEdgeEndRealTemp = e.pointA;
-                            }
-                            if (_cm.Vertices[_currentEdgePoints.End] == _cm.Vertices[e.pointB])
-                            {
-                                lastEdgeEndRealTemp = e.pointB;
-                            }
-                            if (lastEdgeStartRealTemp == -1)
-                            {
-                                if (_cm.Vertices[_currentEdgePoints.Other] == _cm.Vertices[e.pointA])
-                                {
-                                    lastEdgeStartRealTemp = e.pointA;
-                                }
-                                if (_cm.Vertices[_currentEdgePoints.Other] == _cm.Vertices[e.pointB])
-                                {
-                                    lastEdgeStartRealTemp = e.pointB;
-                                }
-                            }
-                            if (lastEdgeEndRealTemp == -1)
-                            {
-                                if (_cm.Vertices[_currentEdgePoints.Other] == _cm.Vertices[e.pointA])
-                                {
-                                    lastEdgeEndRealTemp = e.pointA;
-                                }
-                                if (_cm.Vertices[_currentEdgePoints.Other] == _cm.Vertices[e.pointB])
-                                {
-                                    lastEdgeEndRealTemp = e.pointB;
-                                }
-                            }
-                            // Debug.DrawLine(cm.meshVerts[e.pointA],cm.meshVerts[e.pointB],Color.cyan);
+                        // check the next triangle's edges, we're setting currentEdgeRealTemp because we don't want to override currentEdge etc
+                        EdgeExtensions.FindMatchingEdgePointsOnTriangle(_index, _currentEdgePoints, ref currentEdgeRealTemp, _cm);
 
-                            // Debug.Log("e.PointA " + cm.meshVerts[e.pointA]);
-                            // Debug.Log("e.PointB " + cm.meshVerts[e.pointB]);
-                            // Debug.Log("cm.meshVerts[lastEdgeStart] " + cm.meshVerts[lastEdgeStart]);
-                            // Debug.Log("cm.meshVerts[lastEdgeEnd] " + cm.meshVerts[lastEdgeEnd]);
-                        }
-                        if (lastEdgeStartRealTemp == -1 && lastEdgeEndRealTemp == -1)
+                        if (currentEdgeRealTemp.Start == -1 && currentEdgeRealTemp.End == -1)
                         {
                             DebugTriangle(_index, Color.blue);
 #if UNITY_EDITOR
@@ -754,19 +706,17 @@ public class ClimbShape : MonoBehaviour
 #endif
                         }
                         // Debug.DrawLine(transform.position,transform.position + moveDirection,Color.black);
-
                         // Debug.DrawLine(cm.meshVerts[lastEdgeStart],cm.meshVerts[lastEdgeOther],Color.green);
                         // Debug.DrawLine(cm.meshVerts[lastEdgeStart],cm.meshVerts[lastEdgeEnd],Color.green);
                         // Debug.DrawLine(cm.meshVerts[lastEdgeOther],cm.meshVerts[lastEdgeEnd],Color.green);
-                        // Debug.Log("lastEdgeStartRealTemp " + lastEdgeStartRealTemp);
-                        // Debug.Log("lastEdgeEndRealTemp " + lastEdgeEndRealTemp);
-                        checkIsOnEdge.pointA = lastEdgeStartRealTemp;
-                        checkIsOnEdge.pointB = lastEdgeEndRealTemp;
+
+                        checkIsOnEdge.pointA = currentEdgeRealTemp.Start;
+                        checkIsOnEdge.pointB = currentEdgeRealTemp.End;
 
                         if (!_cm.EdgeAdjacencyInfo.ContainsKey(checkIsOnEdge))
                         {
-                            checkIsOnEdge.pointA = lastEdgeEndRealTemp;
-                            checkIsOnEdge.pointB = lastEdgeStartRealTemp;
+                            checkIsOnEdge.pointA = currentEdgeRealTemp.End;
+                            checkIsOnEdge.pointB = currentEdgeRealTemp.Start;
                         }
 
                         if (checkIsOnEdge.pointA == -1 || checkIsOnEdge.pointB == -1)
@@ -779,7 +729,7 @@ public class ClimbShape : MonoBehaviour
                         // Debug.Log(checkIsOnEdge.triangleB);
                         // Debug.Log(lastEdgeStartRealTemp);
                         // Debug.Log(lastEdgeEndRealTemp);
-                        if (_cm.EdgeAdjacencyInfo[checkIsOnEdge].triangleA == _cm.EdgeAdjacencyInfo[checkIsOnEdge].triangleB)
+                        if (EdgeExtensions.EdgeIsOutsideEdgeByPosition(checkIsOnEdge, _cm))
                         {
                             foreach (Edge e in _cm.EdgesAttachedToCorner[_cornerReached])
                             {
@@ -900,10 +850,9 @@ public class ClimbShape : MonoBehaviour
 
                                     if (edgeTriangleA == triangleCheckCorner && !edgeFound)
                                     {
-                                        if (!(_cm.Vertices[e.pointA] == _cm.Vertices[firstEdgeCrossed.pointA] && _cm.Vertices[e.pointB] == _cm.Vertices[firstEdgeCrossed.pointB] ||
-                                            _cm.Vertices[e.pointA] == _cm.Vertices[firstEdgeCrossed.pointB] && _cm.Vertices[e.pointB] == _cm.Vertices[firstEdgeCrossed.pointA]))
+                                        if (!EdgeExtensions.EdgesMatchByPosition(e, firstEdgeCrossed, _cm))
                                         {
-                                            if (edgeTriangleA == edgeTriangleB)
+                                            if (EdgeExtensions.EdgeIsOutsideEdgeByPosition(e, _cm))
                                             {
                                                 cornerEdge2 = e;
                                                 edgeFound = true;
@@ -920,10 +869,9 @@ public class ClimbShape : MonoBehaviour
                                     }
                                     else if (edgeTriangleB == triangleCheckCorner && !edgeFound)
                                     {
-                                        if (!(_cm.Vertices[e.pointA] == _cm.Vertices[firstEdgeCrossed.pointA] && _cm.Vertices[e.pointB] == _cm.Vertices[firstEdgeCrossed.pointB] ||
-                                            _cm.Vertices[e.pointA] == _cm.Vertices[firstEdgeCrossed.pointB] && _cm.Vertices[e.pointB] == _cm.Vertices[firstEdgeCrossed.pointA]))
+                                        if (!EdgeExtensions.EdgesMatchByPosition(e, firstEdgeCrossed, _cm))
                                         {
-                                            if (edgeTriangleA == edgeTriangleB)
+                                            if (EdgeExtensions.EdgeIsOutsideEdgeByPosition(e, _cm))
                                             {
                                                 cornerEdge2 = e;
                                                 edgeFound = true;
@@ -1020,8 +968,7 @@ public class ClimbShape : MonoBehaviour
                                 bool tempEdgesContainsEdge = false;
                                 foreach (Edge edgeToCheck in tempEdges)
                                 {
-                                    if (_cm.Vertices[e.pointA] == _cm.Vertices[edgeToCheck.pointA] && _cm.Vertices[e.pointB] == _cm.Vertices[edgeToCheck.pointB]
-                                     || _cm.Vertices[e.pointA] == _cm.Vertices[edgeToCheck.pointB] && _cm.Vertices[e.pointB] == _cm.Vertices[edgeToCheck.pointA])
+                                    if (EdgeExtensions.EdgesMatchByPosition(e, edgeToCheck, _cm))
                                     {
                                         tempEdgesContainsEdge = true;
                                     }
@@ -1029,8 +976,7 @@ public class ClimbShape : MonoBehaviour
                                 bool checkedEdgesCornerContainsEdge = false;
                                 foreach (Edge edgeToCheck in checkedEdgesCorner)
                                 {
-                                    if (_cm.Vertices[e.pointA] == _cm.Vertices[edgeToCheck.pointA] && _cm.Vertices[e.pointB] == _cm.Vertices[edgeToCheck.pointB]
-                                     || _cm.Vertices[e.pointA] == _cm.Vertices[edgeToCheck.pointB] && _cm.Vertices[e.pointB] == _cm.Vertices[edgeToCheck.pointA])
+                                    if (EdgeExtensions.EdgesMatchByPosition(e, edgeToCheck, _cm))
                                     {
                                         checkedEdgesCornerContainsEdge = true;
                                     }
@@ -1038,22 +984,17 @@ public class ClimbShape : MonoBehaviour
                                 // if the edge is one of the edges attached to the current corner
                                 if (tempEdgesContainsEdge && !checkedEdgesCornerContainsEdge)
                                 {
-                                    Debug.Log("A");
                                     // Debug.DrawLine(cm.meshVerts[e.pointA], cm.meshVerts[e.pointB], Color.red);
                                     // and it's an outside edge
-                                    if (_cm.EdgeAdjacencyInfo[e].triangleA == _cm.EdgeAdjacencyInfo[e].triangleB)
+                                    if (EdgeExtensions.EdgeIsOutsideEdgeByPosition(e, _cm))
                                     {
-                                        Debug.Log("A1");
                                         if (_cm.Vertices[e.pointA] == _cm.Vertices[_cornerReached])
                                         {
-                                            Debug.Log("A1_1");
                                             cornerEdgePoints.Start = e.pointA;
                                             cornerEdgePoints.End = e.pointB;
-
                                         }
                                         else if (_cm.Vertices[e.pointB] == _cm.Vertices[_cornerReached])
                                         {
-                                            Debug.Log("A1_2");
                                             cornerEdgePoints.Start = e.pointB;
                                             cornerEdgePoints.End = e.pointA;
                                         }
@@ -1061,12 +1002,10 @@ public class ClimbShape : MonoBehaviour
                                         {
                                             if (e2.pointA != cornerEdgePoints.Start && e2.pointA != cornerEdgePoints.End)
                                             {
-                                                Debug.Log("A1_3");
                                                 cornerEdgePoints.Other = e2.pointA;
                                             }
                                             if (e2.pointB != cornerEdgePoints.Start && e2.pointB != cornerEdgePoints.End)
                                             {
-                                                Debug.Log("A1_4");
                                                 cornerEdgePoints.Other = e2.pointB;
                                             }
                                         }
@@ -1082,14 +1021,13 @@ public class ClimbShape : MonoBehaviour
                                         {
                                             cornerTriangleIndex = _cm.EdgeAdjacencyInfo[e].triangleA;
                                         }
-                                        foreach (Edge e2 in _cm.TriangleAdjacencyInfo[cornerTriangleIndex].edges)
+                                        foreach (Edge adjacentEdgeOnTriangle in _cm.TriangleAdjacencyInfo[cornerTriangleIndex].edges)
                                         {
-                                            if (_cm.Vertices[e2.pointA] == _cm.Vertices[e.pointA] && _cm.Vertices[e2.pointB] == _cm.Vertices[e.pointB]
-                                            || _cm.Vertices[e2.pointA] == _cm.Vertices[e.pointA] && _cm.Vertices[e2.pointB] == _cm.Vertices[e.pointB])
+                                            if (EdgeExtensions.EdgesMatchByPosition(adjacentEdgeOnTriangle, e, _cm))
                                             {
-                                                if (!checkedEdgesCorner.Contains(e2))
+                                                if (!checkedEdgesCorner.Contains(adjacentEdgeOnTriangle))
                                                 {
-                                                    checkedEdgesCorner.Add(e2);
+                                                    checkedEdgesCorner.Add(adjacentEdgeOnTriangle);
                                                 }
                                             }
                                         }
@@ -1143,7 +1081,7 @@ public class ClimbShape : MonoBehaviour
                                 if (tempEdgesContainsEdge && !checkedEdgesContainsEdge)
                                 {
                                     // and it's an outside edge
-                                    if (_cm.EdgeAdjacencyInfo[e].triangleA == _cm.EdgeAdjacencyInfo[e].triangleB)
+                                    if (EdgeExtensions.EdgeIsOutsideEdgeByPosition(e, _cm))
                                     {
                                         foundNextEdge = true;
                                         _previousLastIndex = _lastIndex;
@@ -1224,7 +1162,6 @@ public class ClimbShape : MonoBehaviour
                                         // If they do, then we check if the closest point on each edge to the attempted move position is equal to the corner - that's the only situation where we should move round the corner  
                                         if (
                                             DoRaysIntersect(ray1, ray2) &&
-                                            //  slidePoint2 == cm.meshVerts[cornerReached]
                                             IsTriAfterNextThis()
                                         )
                                         {
@@ -1736,7 +1673,7 @@ public class ClimbShape : MonoBehaviour
 
             if (edgeMatches)
             {
-                int nextTriangle = _cm.EdgeAdjacencyInfo[e].triangleA == _cm.EdgeAdjacencyInfo[e].triangleB
+                int nextTriangle = EdgeExtensions.EdgeIsOutsideEdgeByPosition(e, _cm)
                     ? _cm.EdgeAdjacencyInfo[e].triangleA // If adjacent triangles are the same, return the same triangle
                     : _cm.EdgeAdjacencyInfo[e].triangleA != _index
                         ? _cm.EdgeAdjacencyInfo[e].triangleA // If edge has two triangles and the first is not equal to the current triangle, return that
@@ -1913,27 +1850,4 @@ public class ClimbShape : MonoBehaviour
         Car,
         Directional
     }
-
-}
-
-public struct EdgePoints
-{
-    public int Start;
-    public int End;
-    public int Other;
-
-    public EdgePoints(bool initialize = true)
-    {
-        Start = -1;
-        End = -1;
-        Other = -1;
-    }
-
-    public void Set(int start, int end, int other)
-    {
-        Start = start;
-        End = end;
-        Other = other;
-    }
-
 }
