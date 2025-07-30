@@ -184,8 +184,9 @@ public class EdgeUtils
         return cm.Vertices[vertex1] == cm.Vertices[vertex2];
     }
 
-    public static void GetMatchingEdgeOnAdjacentTriangle(ClimbableMesh cm, ref EdgePoints target, EdgePoints source, int triangleIndex)
+    public static void GetMatchingEdgeOnAdjacentTriangle(ClimbableMesh cm, out EdgePoints target, EdgePoints source, int triangleIndex)
     {
+        target = new();
         Edge[] adjacentEdges = cm.TriangleAdjacencyInfo[triangleIndex].edges;
         List<Vector3> vertices = cm.Vertices;
 
@@ -554,13 +555,11 @@ public class EdgeUtils
 
     public static bool IsTriAfterNextThis(ClimbableMesh cm, Transform playerTransform, Vector3 currentCheckPosition, EdgePoints currentEdgePoints, int currentTriangleIndex, int lastTriangleIndex, bool firstMoveDone, int currentCornerIndex, Vector3 input)
     {
-        EdgePoints edgeAdjacentToCurrent = new();
-
         Vector3 tempBarycentricCoordinate = Mathf2.GetBarycentricCoordinates(currentCheckPosition, cm.Vertices[currentEdgePoints.Start], cm.Vertices[currentEdgePoints.End], cm.Vertices[currentEdgePoints.Other]);
 
         Vector3 tempTriCenter = (cm.Vertices[currentEdgePoints.Start] + cm.Vertices[currentEdgePoints.End] + cm.Vertices[currentEdgePoints.Other]) / 3;
 
-        EdgeUtils.GetMatchingEdgeOnAdjacentTriangle(cm, ref edgeAdjacentToCurrent, currentEdgePoints, currentTriangleIndex);
+        EdgeUtils.GetMatchingEdgeOnAdjacentTriangle(cm, out var edgeAdjacentToCurrent, currentEdgePoints, currentTriangleIndex);
 
         Vector3 tempGroundNormal = EdgeUtils.GetNormalFromBarycentric(cm, tempBarycentricCoordinate, edgeAdjacentToCurrent);
 

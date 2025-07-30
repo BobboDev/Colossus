@@ -72,11 +72,7 @@ public class ClimbShape : MonoBehaviour
         _plane = new Plane(-transform.right, transform.position);
         _rb = GetComponent<Rigidbody>();
     }
-    void Update()
-    {
-        // if (Input.GetKeyDown(KeyCode.LeftShift))
-        // rb.velocity = transform.position - rb.transform.position;
-    }
+
     void LateUpdate()
     {
         Physics.SyncTransforms();
@@ -104,33 +100,13 @@ public class ClimbShape : MonoBehaviour
             // Get input
             Vector3 tempInput;
             tempInput = new Vector3(Input.GetAxisRaw("Horizontal"), 0, Input.GetAxisRaw("Vertical")).normalized;
-            // tempInput = Mathf2.RotateAroundAxis(tempInput, Vector3.up, Camera.main.transform.rotation.eulerAngles.y);
 
             // This is for debugging - makes the character go forwards and backwards over an edge rapidly, so I don't have to hammer the keyboard to test. 
             if (Input.GetKeyDown(KeyCode.K))
-            {
                 _goForwardTest = !_goForwardTest;
-                // testPosition = transform.position.x;
-            }
+
             if (_goForwardTest)
-            {
-                // if (transform.position.x > testPosition)
-                // {
-                //     goForwardTest = true;
-                // }
-                // if (transform.position.x < testPosition - 0.005f)
-                // {
-                //     goForwardTest = false;
-                // }
-                // if (goForwardTest)
-                // {
                 tempInput = new Vector3(0, 0, 1);
-                // }
-                // else
-                // {
-                //     tempInput = new Vector3(0, 0, -1);
-                // }
-            }
 
             // if input has magnitude then use it
             if (tempInput.magnitude > 0)
@@ -189,23 +165,10 @@ public class ClimbShape : MonoBehaviour
             ClimbUtils.HandleMovementModeSwitch(_cm, transform, ref _currentEdgePoints, ref _index, ref _lastIndex, ref _firstMoveDone, ref _testCut, ref _barycentricCoordinate, ref _lastBarycentricCoordinate, ref _barycentricCoordinateBehind, MovementMode.Directional, ref _movementMode, ref _newPosition, ref _onEdge);
         }
 
-        EdgePoints edgeAdjacentToCurrent = new();
-
         // Because of hard edges, the current triangle will have different vertices to what's currently stores in lastEdgeStart, lastEdgeEnd, lastEdgeOther
         // We need to check this triangle's edge positions against those and update.
         // lastEdgeStartReal,lastEdgeEndReal, lastEdgeOtherReal are the real indices of the current triangle
-        if (!_cm.TriangleAdjacencyInfo.ContainsKey(_index))
-        {
-            foreach (var item in _cm.TriangleAdjacencyInfo)
-            {
-#if UNITY_EDITOR
-                EditorApplication.isPlaying = false;
-#endif
-            }
-        }
-
-        //
-        EdgeUtils.GetMatchingEdgeOnAdjacentTriangle(_cm, ref edgeAdjacentToCurrent, _currentEdgePoints, _index);
+        EdgeUtils.GetMatchingEdgeOnAdjacentTriangle(_cm, out var edgeAdjacentToCurrent, _currentEdgePoints, _index);
 
         // Calculate the ground normal based on coordinates from the last frame of where we should be standing, translated to the new, deformed triangle
         Vector3 groundNormal = EdgeUtils.GetNormalFromBarycentric(_cm, _barycentricCoordinate, edgeAdjacentToCurrent);
@@ -214,7 +177,12 @@ public class ClimbShape : MonoBehaviour
 
         turnAngle += Input.GetKey(KeyCode.E) ? 100 * Time.deltaTime : 0;
         turnAngle -= Input.GetKey(KeyCode.Q) ? 100 * Time.deltaTime : 0;
-        forwardFromRecordedBarycentric = Quaternion.Euler(0, turnAngle, 0) * forwardFromRecordedBarycentric;
+        forwardFromRecordedBarycentric = Quaternion.Euler(
+            Vector3.Dot(groundNormal, Vector3.right) * turnAngle,
+            Vector3.Dot(groundNormal, Vector3.up) * turnAngle,
+            Vector3.Dot(groundNormal, Vector3.forward) * turnAngle)
+
+            * forwardFromRecordedBarycentric;
 
         if (_movementMode == MovementMode.Directional)
         {
@@ -416,7 +384,6 @@ public class ClimbShape : MonoBehaviour
         // make the currentCheckPosition the same as cut
         _currentCheckPosition = _cut;
 
-        // i is used to break out of infinite while loops
         int i = 0;
 
         // newPosition is updated as we walk through the mesh
@@ -501,7 +468,9 @@ public class ClimbShape : MonoBehaviour
                         _currentEdgePoints.Set(_lastEdgePoints.Start, _lastEdgePoints.End, _lastEdgePoints.Other);
                         _index = _previousLastIndex;
                         totalDistanceChecked = distance;
-
+#if UNITY_EDITOR
+                        EditorApplication.isPaused = true;
+#endif
                         break;
                     }
                     Plane tempPlane = new Plane(-transform.right, transform.position);
@@ -1068,7 +1037,7 @@ public class ClimbShape : MonoBehaviour
 
         Vector3 testPosition = EdgeUtils.GetPositionFromBarycentric(_cm, _barycentricCoordinate, _currentEdgePoints);
 
-        EdgeUtils.GetMatchingEdgeOnAdjacentTriangle(_cm, ref edgeAdjacentToCurrent, _currentEdgePoints, _index);
+        EdgeUtils.GetMatchingEdgeOnAdjacentTriangle(_cm, out edgeAdjacentToCurrent, _currentEdgePoints, _index);
 
         groundNormal = EdgeUtils.GetNormalFromBarycentric(_cm, _barycentricCoordinate, edgeAdjacentToCurrent);
 
