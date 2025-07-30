@@ -6,6 +6,106 @@ using System;
 
 public class EdgeUtils
 {
+
+    public static void SetOrderedEdgePoints(ClimbableMesh cm, Edge edge, int pointToCompare, ref EdgePoints edgePoints)
+    {
+        if (VertexPositionsAreMatching(cm, edge.pointA, pointToCompare))
+        {
+            edgePoints.End = edge.pointA;
+            edgePoints.Start = edge.pointB;
+        }
+        else if (VertexPositionsAreMatching(cm, edge.pointB, pointToCompare))
+        {
+            edgePoints.End = edge.pointB;
+            edgePoints.Start = edge.pointA;
+        }
+
+        edgePoints.Other = GetOtherVertexIndex(cm, edge);
+    }
+
+    public static int GetMatchingPointOnEdgeFromPosition(ClimbableMesh _cm, Vector3 position, EdgePoints edgePoints)
+    {
+        if (position == _cm.Vertices[edgePoints.Start])
+        {
+            return edgePoints.Start;
+        }
+        else if (position == _cm.Vertices[edgePoints.End])
+        {
+            return edgePoints.End;
+        }
+        else return default;
+    }
+    public static Edge FindNextOutsideEdgeFromCorner(ClimbableMesh _cm, int startCorner, int triangleToCheck)
+    {
+        int lastTriangleChecked = -1;
+        int loopCount = 0;
+
+        while (true)
+        {
+            foreach (Edge cornerEdgeToCheck in _cm.EdgesAttachedToCorner[startCorner])
+            {
+                if (!EdgeTouchesTriangle(_cm, cornerEdgeToCheck, triangleToCheck))
+                    continue;
+
+                // if (EdgesMatchByPosition(cornerEdgeToCheck, firstEdgeCrossed, _cm))
+                //     continue;
+
+                if (EdgeIsOutsideEdge(cornerEdgeToCheck, _cm))
+                    return cornerEdgeToCheck;
+
+                int otherTriangle = GetOtherTriangleOnEdge(cornerEdgeToCheck, triangleToCheck);
+                if (otherTriangle != lastTriangleChecked)
+                {
+                    lastTriangleChecked = triangleToCheck;
+                    triangleToCheck = otherTriangle;
+                    break; // Continue main loop
+                }
+            }
+
+            if (++loopCount > 100)
+            {
+                Debug.LogWarning("FindNextOutsideEdgeFromCorner exceeded iteration limit.");
+                break;
+            }
+        }
+
+        return default;
+    }
+
+    public static bool EdgeTouchesTriangle(ClimbableMesh cm, Edge edge, int triangleIndex)
+    {
+        var info = cm.EdgeAdjacencyInfo[edge];
+        return info.triangleA == triangleIndex || info.triangleB == triangleIndex;
+    }
+
+    public static bool TryGetMatchingOutsideEdge(
+
+        ClimbableMesh cm,
+        int triangleIndex,
+        EdgePoints currentEdgePoints)
+    {
+        // Find edge points on the next triangle
+        FindCoupledEdgePointsOnTriangle(triangleIndex, currentEdgePoints, out var matchingEdgePointsOnNextTriangle, cm);
+        Edge matchingEdge = GetEdgeFromEdgePoints(cm, matchingEdgePointsOnNextTriangle);
+
+        // Return true if it's an outside edge
+        return EdgeIsOutsideEdge(matchingEdge, cm);
+    }
+    public static Edge GetEdgeFromEdgePoints(ClimbableMesh cm, EdgePoints edgePoints)
+    {
+        Edge edge = new();
+
+        edge.pointA = edgePoints.Start;
+        edge.pointB = edgePoints.End;
+
+        if (!cm.EdgeAdjacencyInfo.ContainsKey(edge))
+        {
+            edge.pointA = edgePoints.End;
+            edge.pointB = edgePoints.Start;
+        }
+
+        return edge;
+    }
     public static float MeasureAttemptedSlideAlongEdgeThisFrame(float totalDistanceToTravel, float totalDistanceChecked, Vector3 currentMovePosition, Vector3 movePositionAttempt, Vector3 slidePoint)
     {
         Ray tempRay = CreateRay(currentMovePosition, movePositionAttempt);
@@ -39,17 +139,19 @@ public class EdgeUtils
         }
         return _cm.EdgeAdjacencyInfo.ContainsKey(nextEdgeOnThisTriangle) && EdgeIsOutsideEdge(nextEdgeOnThisTriangle, _cm);
     }
-    public static Vector3 GetEdgeNormal(ClimbableMesh cm, Edge cornerEdge, out int cornerEdgeOther)
+    public static Vector3 GetEdgeNormal(ClimbableMesh cm, Edge cornerEdge)
     {
-        cornerEdgeOther = GetOtherVertexIndex(cm, cornerEdge);
+        int cornerEdgeOther = GetOtherVertexIndex(cm, cornerEdge);
         Vector3 triCenter = (cm.Vertices[cornerEdge.pointA] + cm.Vertices[cornerEdge.pointB] + cm.Vertices[cornerEdgeOther]) / 3;
         Vector3 edgeNormal = (triCenter - Mathf2.NearestPointOnLine(cm.Vertices[cornerEdge.pointA], (cm.Vertices[cornerEdge.pointA] - cm.Vertices[cornerEdge.pointB]).normalized, triCenter)).normalized;
 
         return edgeNormal;
     }
 
-    public static void FindMatchingEdgePointsOnTriangle(int triangleIndex, EdgePoints points, ref EdgePoints pointsOut, ClimbableMesh cm)
+    public static void FindCoupledEdgePointsOnTriangle(int triangleIndex, EdgePoints points, out EdgePoints pointsOut, ClimbableMesh cm)
     {
+        pointsOut = new();
+
         int start = -1;
         int end = -1;
 
@@ -171,28 +273,28 @@ public class EdgeUtils
         return (a1 == b1 && a2 == b2) || (a1 == b2 && a2 == b1);
     }
 
-    public static int GetOtherVertexIndex(Edge cornerEdge, ClimbableMesh _cm)
+    public static int GetOtherVertexIndex(ClimbableMesh cm, Edge cornerEdge)
     {
-        foreach (Edge e in _cm.TriangleAdjacencyInfo[_cm.EdgeAdjacencyInfo[cornerEdge].triangleA].edges)
+        foreach (Edge e in cm.TriangleAdjacencyInfo[cm.EdgeAdjacencyInfo[cornerEdge].triangleA].edges)
         {
-            if (_cm.Vertices[e.pointA] != _cm.Vertices[cornerEdge.pointA] && _cm.Vertices[e.pointA] != _cm.Vertices[cornerEdge.pointB])
+            if (cm.Vertices[e.pointA] != cm.Vertices[cornerEdge.pointA] && cm.Vertices[e.pointA] != cm.Vertices[cornerEdge.pointB])
                 return e.pointA;
-            if (_cm.Vertices[e.pointB] != _cm.Vertices[cornerEdge.pointA] && _cm.Vertices[e.pointB] != _cm.Vertices[cornerEdge.pointB])
+            if (cm.Vertices[e.pointB] != cm.Vertices[cornerEdge.pointA] && cm.Vertices[e.pointB] != cm.Vertices[cornerEdge.pointB])
                 return e.pointB;
         }
 
         return -1;
     }
 
-    public static int GetOtherVertexIndex(EdgePoints edge, ClimbableMesh _cm)
+    public static int GetOtherVertexIndex(ClimbableMesh cm, EdgePoints edge)
     {
         Edge cornerEdge = new() { pointA = edge.Start, pointB = edge.End };
 
-        foreach (Edge e in _cm.TriangleAdjacencyInfo[_cm.EdgeAdjacencyInfo[cornerEdge].triangleA].edges)
+        foreach (Edge e in cm.TriangleAdjacencyInfo[cm.EdgeAdjacencyInfo[cornerEdge].triangleA].edges)
         {
-            if (_cm.Vertices[e.pointA] != _cm.Vertices[cornerEdge.pointA] && _cm.Vertices[e.pointA] != _cm.Vertices[cornerEdge.pointB])
+            if (cm.Vertices[e.pointA] != cm.Vertices[cornerEdge.pointA] && cm.Vertices[e.pointA] != cm.Vertices[cornerEdge.pointB])
                 return e.pointA;
-            if (_cm.Vertices[e.pointB] != _cm.Vertices[cornerEdge.pointA] && _cm.Vertices[e.pointB] != _cm.Vertices[cornerEdge.pointB])
+            if (cm.Vertices[e.pointB] != cm.Vertices[cornerEdge.pointA] && cm.Vertices[e.pointB] != cm.Vertices[cornerEdge.pointB])
                 return e.pointB;
         }
 
@@ -212,7 +314,7 @@ public class EdgeUtils
         return -1;
     }
 
-    public static bool VertexPositionsAreMatching(int vertex1, int vertex2, ClimbableMesh cm)
+    public static bool VertexPositionsAreMatching(ClimbableMesh cm, int vertex1, int vertex2)
     {
         return cm.Vertices[vertex1] == cm.Vertices[vertex2];
     }
@@ -407,20 +509,6 @@ public class EdgeUtils
         if (cm.Vertices[p2] == cm.Vertices[target]) return p2;
         if (cm.Vertices[p3] == cm.Vertices[target]) return p3;
         return p1; // Fallback to p1 if no match (assumes a match should exist)
-    }
-
-
-    public static int GetOtherVertexIndex(ClimbableMesh cm, Edge cornerEdge)
-    {
-        foreach (Edge e in cm.TriangleAdjacencyInfo[cm.EdgeAdjacencyInfo[cornerEdge].triangleA].edges)
-        {
-            if (cm.Vertices[e.pointA] != cm.Vertices[cornerEdge.pointA] && cm.Vertices[e.pointA] != cm.Vertices[cornerEdge.pointB])
-                return e.pointA;
-            if (cm.Vertices[e.pointB] != cm.Vertices[cornerEdge.pointA] && cm.Vertices[e.pointB] != cm.Vertices[cornerEdge.pointB])
-                return e.pointB;
-        }
-
-        return -1; // Fallback if not found
     }
 
     // Determines if an intersection point should be accepted based on cut type and direction.
