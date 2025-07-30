@@ -6,6 +6,39 @@ using System;
 
 public class EdgeUtils
 {
+    public static float MeasureAttemptedSlideAlongEdgeThisFrame(float totalDistanceToTravel, float totalDistanceChecked, Vector3 currentMovePosition, Vector3 movePositionAttempt, Vector3 slidePoint)
+    {
+        Ray tempRay = CreateRay(currentMovePosition, movePositionAttempt);
+        Plane tempPlane = new Plane((slidePoint - currentMovePosition).normalized, slidePoint);
+        float hitDistance;
+        tempPlane.Raycast(tempRay, out hitDistance);
+
+        if (hitDistance < 0.001f)
+        {
+            return totalDistanceToTravel;
+        }
+        else
+        {
+            return totalDistanceChecked + hitDistance;
+        }
+    }
+
+    public static bool NextEdgeIsOnThisTriangle(ClimbableMesh _cm, out Edge nextEdgeOnThisTriangle, EdgePoints _currentEdgePoints, int currentCornerInt)
+    {
+        // Get the next edge. Since lastEdgeStart and lastEdgeEnd are always the ouside edge when edge-sliding, the next edge is the corner reached -> lastEdgeOther
+        nextEdgeOnThisTriangle = new Edge();
+        if (currentCornerInt < _currentEdgePoints.Other)
+        {
+            nextEdgeOnThisTriangle.pointA = currentCornerInt;
+            nextEdgeOnThisTriangle.pointB = _currentEdgePoints.Other;
+        }
+        else
+        {
+            nextEdgeOnThisTriangle.pointA = _currentEdgePoints.Other;
+            nextEdgeOnThisTriangle.pointB = currentCornerInt;
+        }
+        return _cm.EdgeAdjacencyInfo.ContainsKey(nextEdgeOnThisTriangle) && EdgeIsOutsideEdge(nextEdgeOnThisTriangle, _cm);
+    }
     public static Vector3 GetEdgeNormal(ClimbableMesh cm, Edge cornerEdge, out int cornerEdgeOther)
     {
         cornerEdgeOther = GetOtherVertexIndex(cm, cornerEdge);
@@ -606,6 +639,8 @@ public class EdgeUtils
             return false;
         }
     }
+
+
 
     public static void DebugTriangle(ClimbableMesh cm, int triangle, Color color)
     {

@@ -410,8 +410,6 @@ public class ClimbShape : MonoBehaviour
         _previousLastIndex = _index;
         _lastEdgePoints.Set(_currentEdgePoints.Start, _currentEdgePoints.End, _currentEdgePoints.Other);
 
-        // START REFACTOR
-
         // while we have checked less distance than the edge
         while (totalDistanceChecked < distance)
         {
@@ -494,57 +492,32 @@ public class ClimbShape : MonoBehaviour
                     currentCornerIntOther = _currentEdgePoints.Start;
                 }
 
+                ////////////////////////////////
+                //                            //
+                //   !!!!!!!!!!!!!!!!!!!!!!   //
+                //   !!                  !!   //
+                //   !!  START REFACTOR  !!   //
+                //   !!                  !!   //
+                //   !!     510 LINES    !!   //
+                //   !!                  !!   //
+                //   !!  START REFACTOR  !!   //
+                //   !!                  !!   //
+                //   !!!!!!!!!!!!!!!!!!!!!!   //
+                //                            //
+                ////////////////////////////////
+
                 // if we reached a corner
                 if (currentCornerInt != -1)
                 {
-                    // Get the next edge. Since lastEdgeStart and lastEdgeEnd are always the ouside edge when edge-sliding, the next edge is the corner reached -> lastEdgeOther
-                    Edge nextEdgeOnThisTriangle = new Edge();
-                    if (currentCornerInt < _currentEdgePoints.Other)
-                    {
-                        nextEdgeOnThisTriangle.pointA = currentCornerInt;
-                        nextEdgeOnThisTriangle.pointB = _currentEdgePoints.Other;
-                    }
-                    else
-                    {
-                        nextEdgeOnThisTriangle.pointA = _currentEdgePoints.Other;
-                        nextEdgeOnThisTriangle.pointB = currentCornerInt;
-                    }
+                    totalDistanceChecked = EdgeUtils.MeasureAttemptedSlideAlongEdgeThisFrame(distance, totalDistanceChecked, _newPosition, movePositionAttempt, slidePoint);
+
                     // If the next edge is another outside edge on the same triangle, switch to that. 
-                    if (_cm.EdgeAdjacencyInfo.ContainsKey(nextEdgeOnThisTriangle) && EdgeUtils.EdgeIsOutsideEdge(nextEdgeOnThisTriangle, _cm))
+                    if (EdgeUtils.NextEdgeIsOnThisTriangle(_cm, out var nextEdgeOnThisTriangle, _currentEdgePoints, currentCornerInt))
                     {
-
                         _currentEdgePoints.Set(nextEdgeOnThisTriangle.pointA, nextEdgeOnThisTriangle.pointB, currentCornerIntOther);
-
-                        Ray tempRay = EdgeUtils.CreateRay(_newPosition, movePositionAttempt);
-                        Plane tempPlane = new Plane((slidePoint - _newPosition).normalized, slidePoint);
-                        float hitDistance;
-                        tempPlane.Raycast(tempRay, out hitDistance);
-                        if (hitDistance < 0.001f)
-                        {
-                            totalDistanceChecked = distance;
-                        }
-                        else
-                        {
-                            totalDistanceChecked += hitDistance;
-                        }
                     }
                     else // If the next edge isn't an outside edge on the same triangle
                     {
-
-                        Ray tempRay = EdgeUtils.CreateRay(_newPosition, movePositionAttempt);
-                        Plane tempPlane = new Plane((slidePoint - _newPosition).normalized, slidePoint);
-
-                        float hitDistance;
-                        tempPlane.Raycast(tempRay, out hitDistance);
-                        if (hitDistance < 0.001f)
-                        {
-                            totalDistanceChecked = distance;
-                        }
-                        else
-                        {
-                            totalDistanceChecked += hitDistance;
-                        }
-
                         if (slidePoint == _cm.Vertices[_currentEdgePoints.Start])
                         {
                             _cornerReached = _currentEdgePoints.Start;
@@ -572,10 +545,6 @@ public class ClimbShape : MonoBehaviour
                             EditorApplication.isPaused = true;
 #endif
                         }
-                        // Debug.DrawLine(transform.position,transform.position + moveDirection,Color.black);
-                        // Debug.DrawLine(cm.meshVerts[lastEdgeStart],cm.meshVerts[lastEdgeOther],Color.green);
-                        // Debug.DrawLine(cm.meshVerts[lastEdgeStart],cm.meshVerts[lastEdgeEnd],Color.green);
-                        // Debug.DrawLine(cm.meshVerts[lastEdgeOther],cm.mesxhVerts[lastEdgeEnd],Color.green);
 
                         checkIsOnEdge.pointA = currentEdgeRealTemp.Start;
                         checkIsOnEdge.pointB = currentEdgeRealTemp.End;
@@ -732,11 +701,12 @@ public class ClimbShape : MonoBehaviour
 
                         List<Edge> checkedEdges = new List<Edge>();
                         List<Edge> checkedEdgesCorner = new List<Edge>();
-                        // if we haven't found an outer edge
 
                         EdgePoints cornerEdgePoints = new();
 
                         int cornerTriangleIndex = tempIndex;
+
+                        // if we haven't found an outer edge
                         while (cornerEdgePoints.Start == -1)
                         {
                             foreach (Edge e in _cm.TriangleAdjacencyInfo[cornerTriangleIndex].edges)
@@ -761,7 +731,6 @@ public class ClimbShape : MonoBehaviour
                                 // if the edge is one of the edges attached to the current corner
                                 if (tempEdgesContainsEdge && !checkedEdgesCornerContainsEdge)
                                 {
-                                    // Debug.DrawLine(cm.meshVerts[e.pointA], cm.meshVerts[e.pointB], Color.red);
                                     // and it's an outside edge
                                     if (EdgeUtils.EdgeIsOutsideEdge(e, _cm))
                                     {
@@ -883,9 +852,7 @@ public class ClimbShape : MonoBehaviour
 
                                         Vector3 newEdgeNormal2 = Vector3.ProjectOnPlane(newEdgeNormal * shouldInvertNewEdgeNormal, cornerNormal).normalized;
                                         Vector3 lastEdgeNormal2 = Vector3.ProjectOnPlane(lastEdgeNormal, cornerNormal).normalized;
-                                        // Debug.DrawLine(closestPointOnEdge, closestPointOnEdge + newEdgeNormal2, Color.yellow);
-                                        // Debug.DrawLine(previousClosestPointOnEdge, previousClosestPointOnEdge + lastEdgeNormal2, Color.yellow);
-                                        // Debug.DrawLine(transform.position, transform.position + cornerNormal, Color.red);
+
                                         if (Vector3.Dot((transform.rotation * _input).normalized, (closestPointOnEdge - triCenter).normalized) < 0)
                                         {
                                             _onEdge = false;
@@ -966,15 +933,8 @@ public class ClimbShape : MonoBehaviour
                                             _index = tempIndex;
                                             _lastIndex = tempLastIndex;
                                             _currentEdgePoints.Set(nextTriCurrentEdgePoints.End, nextTriCurrentEdgePoints.Start, nextTriCurrentEdgePoints.Other);
-
-                                            // Debug.DrawLine(cm.meshVerts[lastEdgeStart],cm.meshVerts[lastEdgeStart] + Vector3.up, Color.green);
-                                            // Debug.DrawLine(cm.meshVerts[lastEdgeEnd],cm.meshVerts[lastEdgeEnd] + Vector3.up, Color.blue);
-                                            // Debug.DrawLine(cm.meshVerts[lastEdgeOther],cm.meshVerts[lastEdgeOther] + Vector3.up, Color.yellow);
-                                            // EditorApplication.isPaused = true;
                                             _onEdge = false;
-
                                             foundNextEdge = true;
-
                                             totalDistanceChecked = distance;
                                         }
                                         else
@@ -992,7 +952,6 @@ public class ClimbShape : MonoBehaviour
                                 EditorApplication.isPaused = true;
 #endif
                                 Debug.Log("couldn't find next edge");
-                                // Debug.DrawLine(cm.meshVerts[lastEdgeStart], cm.meshVerts[lastEdgeEnd], Color.magenta);
 
                                 return;
                             }
@@ -1007,6 +966,20 @@ public class ClimbShape : MonoBehaviour
                     totalDistanceChecked = distance;
                     _newPosition = slidePoint;
                 }
+
+                ////////////////////////////////
+                //                            //
+                //   !!!!!!!!!!!!!!!!!!!!!!   //
+                //   !!                  !!   //
+                //   !!   END REFACTOR   !!   //
+                //   !!                  !!   //
+                //   !!     510 LINES    !!   //
+                //   !!                  !!   //
+                //   !!   END REFACTOR   !!   //
+                //   !!                  !!   //
+                //   !!!!!!!!!!!!!!!!!!!!!!   //
+                //                            //
+                ////////////////////////////////
 
                 remainingDistance = remainingDistance - Vector3.Distance(_newPosition, slidePoint);
 
