@@ -236,7 +236,6 @@ public class ClimbShape : MonoBehaviour
                 // Debug.DrawLine(transform.position, transform.position + tempForward, Color.magenta);
 
                 forwardFromRecordedBarycentric = (forwardPointOnTriangle - behindPointOnTriangle).normalized;
-                // tempForward = Vector3.forward;
                 // Debug.DrawLine(transform.position, transform.position + tempForward, Color.magenta);
             }
             else
