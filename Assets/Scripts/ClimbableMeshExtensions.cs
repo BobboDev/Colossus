@@ -56,10 +56,10 @@ public static class ClimbableMeshExtensions
                 else
                 {
                     // the next triangle to check 
-                    int triangleOnOtherSideOfEdge = EdgeExtensions.GetOtherTriangleOnEdge(cornerEdgeBeingChecked, currentCheckingTriangleInCorner);
+                    int triangleOnOtherSideOfEdge = EdgeUtils.GetOtherTriangleOnEdge(cornerEdgeBeingChecked, currentCheckingTriangleInCorner);
 
                     // If the corner being checked is not the first edge we crossed
-                    if (!EdgeExtensions.EdgesMatchByPosition(cornerEdgeBeingChecked, firstEdgeCrossed, climbableMesh))
+                    if (!EdgeUtils.EdgesMatchByPosition(cornerEdgeBeingChecked, firstEdgeCrossed, climbableMesh))
                     {
                         // And the triangle isn't the one we just checked
                         if (trianglePreviouslyChecked != triangleOnOtherSideOfEdge)
