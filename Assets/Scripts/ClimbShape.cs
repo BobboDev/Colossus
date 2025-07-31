@@ -554,7 +554,7 @@ public class ClimbShape : MonoBehaviour
                         List<Edge> checkedEdges = new List<Edge>();
                         List<Edge> checkedEdgesCorner = new List<Edge>();
 
-                        EdgePoints cornerEdgePoints = new();
+                        EdgePoints cornerEdgePoints = new(true);
 
                         int cornerTriangleIndex = tempIndex;
 
@@ -587,7 +587,17 @@ public class ClimbShape : MonoBehaviour
                                     // and it's an outside edge
                                     if (EdgeUtils.EdgeIsOutsideEdge(e, _cm))
                                     {
-                                        EdgeUtils.SetOrderedEdgePoints(_cm, e, _cornerReached, ref cornerEdgePoints);
+                                        if (_cm.Vertices[e.pointA] == _cm.Vertices[_cornerReached])
+                                        {
+                                            cornerEdgePoints.Start = e.pointA;
+                                            cornerEdgePoints.End = e.pointB;
+                                        }
+                                        else if (_cm.Vertices[e.pointB] == _cm.Vertices[_cornerReached])
+                                        {
+                                            cornerEdgePoints.Start = e.pointB;
+                                            cornerEdgePoints.End = e.pointA;
+                                        }
+                                        cornerEdgePoints.Other = EdgeUtils.GetOtherVertexIndexFromTriangle(cornerEdgePoints, cornerTriangleIndex, _cm);
                                     }
                                     else
                                     {
@@ -717,19 +727,34 @@ public class ClimbShape : MonoBehaviour
                                     }
                                     else
                                     {
-                                        EdgePoints nextTriCurrentEdgePoints = new();
+                                        EdgePoints nextTriCurrentEdgePoints = new(true);
                                         // else switch to the tri on the other side of the edge
                                         tempLastIndex = tempIndex;
 
-                                        tempIndex = EdgeUtils.GetMatchingTriangleOnEdge(_cm, tempIndex, e);
-
+                                        if (tempIndex == _cm.EdgeAdjacencyInfo[e].triangleA)
+                                        {
+                                            tempIndex = _cm.EdgeAdjacencyInfo[e].triangleB;
+                                        }
+                                        else
+                                        {
+                                            tempIndex = _cm.EdgeAdjacencyInfo[e].triangleA;
+                                        }
                                         checkedEdges.Add(e);
+                                        if (_cm.Vertices[e.pointA] == _cm.Vertices[_cornerReached])
+                                        {
+                                            nextTriCurrentEdgePoints.Start = e.pointA;
+                                            nextTriCurrentEdgePoints.End = e.pointB;
+                                        }
+                                        else
+                                        {
+                                            nextTriCurrentEdgePoints.Start = e.pointB;
+                                            nextTriCurrentEdgePoints.End = e.pointA;
+                                        }
 
-                                        EdgeUtils.SetOrderedEdgePoints(_cm, e, _cornerReached, ref nextTriCurrentEdgePoints);
+                                        nextTriCurrentEdgePoints.Other = EdgeUtils.GetOtherVertexIndexFromTriangle(nextTriCurrentEdgePoints, tempIndex, _cm);
 
                                         // check if we are pointing towards the other edge (not the next edge attached to corner)
                                         // if so, we can come unstuck.
-                                        _plane = new Plane(CharacterModel.rotation * (Quaternion.Euler(0, 90, 0) * _input), _cm.Vertices[_cornerReached]);
                                         if (EdgeUtils.GetFarEdgeCut(_cm, transform, _input, _cornerReached, tempIndex, _currentEdgePoints, nextTriCurrentEdgePoints, cornerEdgePoints, _plane))
                                         {
                                             _index = tempIndex;

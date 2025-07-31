@@ -300,6 +300,19 @@ public class EdgeUtils
         return -1;
     }
 
+    public static int GetOtherVertexIndexFromTriangle(EdgePoints cornerEdge, int triangleIndex, ClimbableMesh _cm)
+    {
+        foreach (Edge e in _cm.TriangleAdjacencyInfo[triangleIndex].edges)
+        {
+            if (_cm.Vertices[e.pointA] != _cm.Vertices[cornerEdge.Start] && _cm.Vertices[e.pointA] != _cm.Vertices[cornerEdge.End])
+                return e.pointA;
+            if (_cm.Vertices[e.pointB] != _cm.Vertices[cornerEdge.Start] && _cm.Vertices[e.pointB] != _cm.Vertices[cornerEdge.End])
+                return e.pointB;
+        }
+
+        return -1;
+    }
+
     public static int GetOtherVertexIndex(ClimbableMesh cm, EdgePoints edge)
     {
         Edge cornerEdge = new() { pointA = edge.Start, pointB = edge.End };
@@ -384,7 +397,7 @@ public class EdgeUtils
     {
         Vector3 triCenter = (cm.Vertices[cornerEdgePoints.Start] + cm.Vertices[cornerEdgePoints.End] + cm.Vertices[cornerEdgePoints.Other]) / 3;
         Vector3 closestPointOnEdge = Mathf2.NearestPointOnLine(cm.Vertices[cornerEdgePoints.Start], (cm.Vertices[cornerEdgePoints.Start] - cm.Vertices[cornerEdgePoints.End]).normalized, triCenter);
-        Vector3 nextTriCenter = (cm.Vertices[nextTriCurrentEdgePoints.Start] + cm.Vertices[nextTriCurrentEdgePoints.End] + cm.Vertices[cornerEdgePoints.Other]) / 3;
+        Vector3 nextTriCenter = (cm.Vertices[nextTriCurrentEdgePoints.Start] + cm.Vertices[nextTriCurrentEdgePoints.End] + cm.Vertices[nextTriCurrentEdgePoints.Other]) / 3;
         Vector3 nextTriClosestPointOnEdge = Mathf2.NearestPointOnLine(cm.Vertices[nextTriCurrentEdgePoints.Start], (cm.Vertices[nextTriCurrentEdgePoints.Start] - cm.Vertices[nextTriCurrentEdgePoints.End]).normalized, nextTriCenter);
 
         Vector3 cornerNormal = Vector3.Cross(cm.Vertices[cornerEdgePoints.Start] - cm.Vertices[cornerEdgePoints.Other], cm.Vertices[cornerEdgePoints.Start] - cm.Vertices[cornerEdgePoints.End]).normalized;
@@ -417,14 +430,6 @@ public class EdgeUtils
                     }
                 }
             }
-        }
-
-        if (!planeHitsFarEdge)
-        {
-            EditorApplication.isPaused = true;
-            DebugTriangle(cm, triangleIndex, Color.blue);
-            Debug.DrawLine(playerTransform.position, playerTransform.position + cornerAdjustedMoveDirection.normalized, Color.red);
-            Debug.Log("Confirm stuck");
         }
 
         return planeHitsFarEdge;
@@ -683,11 +688,15 @@ public class EdgeUtils
 
     public static bool IsTriAfterNextThis(ClimbableMesh cm, Transform playerTransform, Vector3 currentCheckPosition, EdgePoints currentEdgePoints, int currentTriangleIndex, int lastTriangleIndex, bool firstMoveDone, int currentCornerIndex, Vector3 input)
     {
+
+        EdgePoints edgeAdjacentToCurrent = new(true);
+
         Vector3 tempBarycentricCoordinate = Mathf2.GetBarycentricCoordinates(currentCheckPosition, cm.Vertices[currentEdgePoints.Start], cm.Vertices[currentEdgePoints.End], cm.Vertices[currentEdgePoints.Other]);
 
         Vector3 tempTriCenter = (cm.Vertices[currentEdgePoints.Start] + cm.Vertices[currentEdgePoints.End] + cm.Vertices[currentEdgePoints.Other]) / 3;
 
-        EdgeUtils.GetMatchingEdgeOnAdjacentTriangle(cm, out var edgeAdjacentToCurrent, currentEdgePoints, currentTriangleIndex);
+
+        EdgeUtils.GetMatchingEdgeOnAdjacentTriangle(cm, out edgeAdjacentToCurrent, currentEdgePoints, currentTriangleIndex);
 
         Vector3 tempGroundNormal = EdgeUtils.GetNormalFromBarycentric(cm, tempBarycentricCoordinate, edgeAdjacentToCurrent);
 
