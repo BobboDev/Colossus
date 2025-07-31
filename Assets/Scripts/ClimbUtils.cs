@@ -6,7 +6,37 @@ using System;
 
 public class ClimbUtils
 {
+
     public static void HandleMovementModeSwitch(
+        ClimbableMesh cm,
+        Transform playerTransform,
+        ref EdgePoints currentEdgePoints,
+        ref int currentTriangleIndex,
+        ref int lastTriangleIndex,
+        ref bool firstMoveDone,
+        ref Vector3 testCut,
+        ref Vector3 barycentricCoordinate,
+        ref Vector3 lastBarycentricCoordinate,
+        ref Vector3 barycentricCoordinateBehind,
+        ref MovementMode currentMovementMode,
+        ref Vector3 newPosition,
+        ref bool onEdge
+    )
+    {
+        MovementMode targetMovementMode;
+        if (Input.GetKey(KeyCode.LeftShift))
+        {
+            targetMovementMode = MovementMode.Car;
+        }
+        else
+        {
+            targetMovementMode = MovementMode.Directional;
+        }
+
+        SwitchMovementMode(cm, playerTransform, ref currentEdgePoints, ref currentTriangleIndex, ref lastTriangleIndex, ref firstMoveDone, ref testCut, ref barycentricCoordinate, ref lastBarycentricCoordinate, ref barycentricCoordinateBehind, targetMovementMode, ref currentMovementMode, ref newPosition, ref onEdge);
+    }
+
+    public static void SwitchMovementMode(
         ClimbableMesh cm,
         Transform playerTransform,
         ref EdgePoints currentEdgePoints,

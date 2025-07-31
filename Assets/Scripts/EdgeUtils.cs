@@ -3,9 +3,23 @@ using System.Collections.Generic;
 using Overhang;
 using UnityEngine;
 using System;
+using UnityEditor;
+using TMPro.EditorUtilities;
 
 public class EdgeUtils
 {
+
+    public static int GetMatchingTriangleOnEdge(ClimbableMesh cm, int triangleIndex, Edge e)
+    {
+        if (triangleIndex == cm.EdgeAdjacencyInfo[e].triangleA)
+        {
+            return cm.EdgeAdjacencyInfo[e].triangleB;
+        }
+        else
+        {
+            return cm.EdgeAdjacencyInfo[e].triangleA;
+        }
+    }
 
     public static void SetOrderedEdgePoints(ClimbableMesh cm, Edge edge, int pointToCompare, ref EdgePoints edgePoints)
     {
@@ -301,19 +315,6 @@ public class EdgeUtils
         return -1;
     }
 
-    public static int GetOtherVertexIndexFromTriangle(EdgePoints cornerEdge, int triangleIndex, ClimbableMesh _cm)
-    {
-        foreach (Edge e in _cm.TriangleAdjacencyInfo[triangleIndex].edges)
-        {
-            if (_cm.Vertices[e.pointA] != _cm.Vertices[cornerEdge.Start] && _cm.Vertices[e.pointA] != _cm.Vertices[cornerEdge.End])
-                return e.pointA;
-            if (_cm.Vertices[e.pointB] != _cm.Vertices[cornerEdge.Start] && _cm.Vertices[e.pointB] != _cm.Vertices[cornerEdge.End])
-                return e.pointB;
-        }
-
-        return -1;
-    }
-
     public static bool VertexPositionsAreMatching(ClimbableMesh cm, int vertex1, int vertex2)
     {
         return cm.Vertices[vertex1] == cm.Vertices[vertex2];
@@ -386,8 +387,6 @@ public class EdgeUtils
         Vector3 nextTriCenter = (cm.Vertices[nextTriCurrentEdgePoints.Start] + cm.Vertices[nextTriCurrentEdgePoints.End] + cm.Vertices[cornerEdgePoints.Other]) / 3;
         Vector3 nextTriClosestPointOnEdge = Mathf2.NearestPointOnLine(cm.Vertices[nextTriCurrentEdgePoints.Start], (cm.Vertices[nextTriCurrentEdgePoints.Start] - cm.Vertices[nextTriCurrentEdgePoints.End]).normalized, nextTriCenter);
 
-        Vector3 previousTriCenter = (cm.Vertices[currentEdgePoints.Start] + cm.Vertices[currentEdgePoints.End] + cm.Vertices[currentEdgePoints.Other]) / 3;
-
         Vector3 cornerNormal = Vector3.Cross(cm.Vertices[cornerEdgePoints.Start] - cm.Vertices[cornerEdgePoints.Other], cm.Vertices[cornerEdgePoints.Start] - cm.Vertices[cornerEdgePoints.End]).normalized;
         if (Vector3.Dot(cornerNormal, playerTransform.up) < 0)
         {
@@ -418,6 +417,14 @@ public class EdgeUtils
                     }
                 }
             }
+        }
+
+        if (!planeHitsFarEdge)
+        {
+            EditorApplication.isPaused = true;
+            DebugTriangle(cm, triangleIndex, Color.blue);
+            Debug.DrawLine(playerTransform.position, playerTransform.position + cornerAdjustedMoveDirection.normalized, Color.red);
+            Debug.Log("Confirm stuck");
         }
 
         return planeHitsFarEdge;
