@@ -731,25 +731,10 @@ public class ClimbShape : MonoBehaviour
                                         // else switch to the tri on the other side of the edge
                                         tempLastIndex = tempIndex;
 
-                                        if (tempIndex == _cm.EdgeAdjacencyInfo[e].triangleA)
-                                        {
-                                            tempIndex = _cm.EdgeAdjacencyInfo[e].triangleB;
-                                        }
-                                        else
-                                        {
-                                            tempIndex = _cm.EdgeAdjacencyInfo[e].triangleA;
-                                        }
+                                        tempIndex = EdgeUtils.GetOtherTriangleOnEdgeFromAdjacencyInfo(_cm, e, tempIndex);
+
                                         checkedEdges.Add(e);
-                                        if (_cm.Vertices[e.pointA] == _cm.Vertices[_cornerReached])
-                                        {
-                                            nextTriCurrentEdgePoints.Start = e.pointA;
-                                            nextTriCurrentEdgePoints.End = e.pointB;
-                                        }
-                                        else
-                                        {
-                                            nextTriCurrentEdgePoints.Start = e.pointB;
-                                            nextTriCurrentEdgePoints.End = e.pointA;
-                                        }
+                                        EdgeUtils.GetOrderedEdgePointsFromEdge(_cm, _cornerReached, e, ref nextTriCurrentEdgePoints);
 
                                         nextTriCurrentEdgePoints.Other = EdgeUtils.GetOtherVertexIndexFromTriangle(nextTriCurrentEdgePoints, tempIndex, _cm);
 

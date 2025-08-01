@@ -21,6 +21,20 @@ public class EdgeUtils
         }
     }
 
+    public static void GetOrderedEdgePointsFromEdge(ClimbableMesh cm, int firstPointOnEdge, Edge e, ref EdgePoints edgePoints)
+    {
+        if (cm.Vertices[e.pointA] == cm.Vertices[firstPointOnEdge])
+        {
+            edgePoints.Start = e.pointA;
+            edgePoints.End = e.pointB;
+        }
+        else
+        {
+            edgePoints.Start = e.pointB;
+            edgePoints.End = e.pointA;
+        }
+    }
+
     public static void SetOrderedEdgePoints(ClimbableMesh cm, Edge edge, int pointToCompare, ref EdgePoints edgePoints)
     {
         if (VertexPositionsAreMatching(cm, edge.pointA, pointToCompare))
@@ -265,7 +279,14 @@ public class EdgeUtils
     {
         int firstTriAdjacentToEdge = cm.EdgeAdjacencyInfo[edge].triangleA;
         int secondTriAdjacentToEdge = cm.EdgeAdjacencyInfo[edge].triangleB;
-
+        if (firstTriAdjacentToEdge == secondTriAdjacentToEdge)
+        {
+            Debug.Log($"Edges Match! triangleA: {cm.EdgeAdjacencyInfo[edge].triangleA} triangleB: {cm.EdgeAdjacencyInfo[edge].triangleB}");
+        }
+        else
+        {
+            Debug.Log($"Edges Different! triangleA: {cm.EdgeAdjacencyInfo[edge].triangleA} triangleB: {cm.EdgeAdjacencyInfo[edge].triangleB}");
+        }
         return firstTriAdjacentToEdge == secondTriAdjacentToEdge;
     }
 
@@ -376,6 +397,18 @@ public class EdgeUtils
             return firstTriAdjacentToEdge;
 
         return 0;
+    }
+
+    public static int GetOtherTriangleOnEdgeFromAdjacencyInfo(ClimbableMesh cm, Edge edge, int currentTriangleIndex)
+    {
+        if (currentTriangleIndex == cm.EdgeAdjacencyInfo[edge].triangleA)
+        {
+            return cm.EdgeAdjacencyInfo[edge].triangleB;
+        }
+        else
+        {
+            return cm.EdgeAdjacencyInfo[edge].triangleA;
+        }
     }
 
     public static Vector3 GetPositionFromBarycentric(ClimbableMesh cm, Vector3 barycentricCoordinate, EdgePoints edgePoints)
