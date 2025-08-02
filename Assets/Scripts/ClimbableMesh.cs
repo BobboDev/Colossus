@@ -845,7 +845,7 @@ namespace Overhang
                         Vector3 v2 = climbableMeshTransform.transform.TransformPoint(vertices[edge.Key.VertexIndex2]);
                         x++;
                         // Draw the debug line for a single frame duration
-                        Debug.DrawLine(v1, v2, Color.yellow);
+                        // Debug.DrawLine(v1, v2, Color.yellow);
                     }
                 }
 

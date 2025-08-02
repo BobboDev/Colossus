@@ -421,7 +421,7 @@ public class EdgeUtils
 
     public static Ray CreateRay(Vector3 point1, Vector3 point2) => new Ray { origin = point1, direction = (point2 - point1).normalized };
 
-    public static bool GetFarEdgeCut(ClimbableMesh cm, Transform playerTransform, Vector3 input, int currentCornerInt, int triangleIndex, EdgePoints currentEdgePoints, EdgePoints nextTriCurrentEdgePoints, EdgePoints cornerEdgePoints, Plane plane, MovementMode movementMode)
+    public static bool GetFarEdgeCut(ClimbableMesh cm, Transform playerTransform, Vector3 input, int currentCornerInt, int triangleIndex, EdgePoints currentEdgePoints, ref EdgePoints nextTriCurrentEdgePoints, EdgePoints cornerEdgePoints, Plane plane, MovementMode movementMode)
     {
         Vector3 triCenter = (cm.Vertices[cornerEdgePoints.Start] + cm.Vertices[cornerEdgePoints.End] + cm.Vertices[cornerEdgePoints.Other]) / 3;
         Vector3 closestPointOnEdge = Mathf2.NearestPointOnLine(cm.Vertices[cornerEdgePoints.Start], (cm.Vertices[cornerEdgePoints.Start] - cm.Vertices[cornerEdgePoints.End]).normalized, triCenter);
@@ -440,10 +440,14 @@ public class EdgeUtils
 
         bool planeHitsFarEdge = false;
 
+
+
+
         // if move direction is facing into the wall that we're sliding on
         Vector3 cornerAdjustedMoveDirection = Vector3.ProjectOnPlane((playerTransform.rotation * input).normalized, cornerNormal).normalized;
         if (Vector3.Dot((playerTransform.rotation * input).normalized, nextTriEdgeNormal2) < 0 && Vector3.Dot(cornerAdjustedMoveDirection, edgeNormal2) < 0)
         {
+
             foreach (Edge e in cm.TriangleAdjacencyInfo[triangleIndex].edges)
             {
                 if (cm.Vertices[e.pointA] != cm.Vertices[currentCornerInt] && cm.Vertices[e.pointB] != cm.Vertices[currentCornerInt])
@@ -451,11 +455,22 @@ public class EdgeUtils
                     Ray farEdgeRay = EdgeUtils.CreateRay(cm.Vertices[e.pointA], cm.Vertices[e.pointB]);
                     if (plane.Raycast(farEdgeRay, out var farEdgeHitDistance))
                     {
+
                         if (farEdgeHitDistance > 0 && farEdgeHitDistance <= Vector3.Distance(cm.Vertices[e.pointA], cm.Vertices[e.pointB]))
                         {
+
                             Vector3 forwardDirection = movementMode == MovementMode.Car ? (playerTransform.rotation * input).normalized : playerTransform.forward;
-                            if (Vector3.Dot((cm.Vertices[currentCornerInt] - farEdgeRay.GetPoint(farEdgeHitDistance)).normalized, forwardDirection) > 0)
+
+                            // Debug.DrawLine(playerTransform.position, playerTransform.position + (playerTransform.rotation * input).normalized, Color.white); //good!
+                            // Debug.DrawLine(playerTransform.position, playerTransform.position + playerTransform.forward, Color.magenta); //good!
+                            Debug.DrawLine(playerTransform.position, playerTransform.position + (farEdgeRay.GetPoint(farEdgeHitDistance) - cm.Vertices[currentCornerInt]).normalized, Color.green);
+
+                            if (Vector3.Dot((farEdgeRay.GetPoint(farEdgeHitDistance) - cm.Vertices[currentCornerInt]).normalized, forwardDirection) > 0)
+                            {
                                 planeHitsFarEdge = true;
+                                nextTriCurrentEdgePoints.Set(e.pointA, e.pointB, currentCornerInt);
+                                // Debug.DrawLine(cm.Vertices[e.pointA], cm.Vertices[e.pointB], Color.red);
+                            }
                         }
                     }
                 }

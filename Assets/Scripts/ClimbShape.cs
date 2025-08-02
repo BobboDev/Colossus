@@ -277,11 +277,11 @@ public class ClimbShape : MonoBehaviour
                 {
                     Debug.Log("Found Collision " + col.name);
                     Physics.ComputePenetration(DepenetrationCapsule, DepenetrationCapsule.transform.position, DepenetrationCapsule.transform.rotation, col, col.transform.position, col.transform.rotation, out depenetrationDirection, out depenetrationDistance);
-                    Debug.DrawLine(transform.position, transform.position + depenetrationDirection * depenetrationDistance, Color.yellow);
+                    // Debug.DrawLine(transform.position, transform.position + depenetrationDirection * depenetrationDistance, Color.yellow);
                     if (depenetrationDistance > 0.00001f)
                     {
                         totalDepenetrationDirection += Vector3.ProjectOnPlane(depenetrationDirection * depenetrationDistance, groundNormal);
-                        Debug.DrawLine(transform.position, transform.position + totalDepenetrationDirection, Color.red);
+                        // Debug.DrawLine(transform.position, transform.position + totalDepenetrationDirection, Color.red);
                     }
                 }
                 // Don't need to average this! Additive is better.
@@ -740,11 +740,13 @@ public class ClimbShape : MonoBehaviour
                                         {
                                             _plane = new Plane(CharacterModel.right, _cm.Vertices[_cornerReached]);
                                         }
-                                        if (EdgeUtils.GetFarEdgeCut(_cm, transform, _input, _cornerReached, tempIndex, _currentEdgePoints, nextTriCurrentEdgePoints, cornerEdgePoints, _plane, _movementMode))
+                                        if (EdgeUtils.GetFarEdgeCut(_cm, transform, _input, _cornerReached, tempIndex, _currentEdgePoints, ref nextTriCurrentEdgePoints, cornerEdgePoints, _plane, _movementMode))
                                         {
                                             _index = tempIndex;
+                                            // EdgeUtils.DebugTriangle(_cm, _index, Color.white);
                                             _lastIndex = tempLastIndex;
-                                            _currentEdgePoints.Set(nextTriCurrentEdgePoints.End, nextTriCurrentEdgePoints.Start, nextTriCurrentEdgePoints.Other);
+                                            _currentEdgePoints.Set(nextTriCurrentEdgePoints.Start, nextTriCurrentEdgePoints.End, nextTriCurrentEdgePoints.Other);
+                                            Debug.DrawLine(_cm.Vertices[nextTriCurrentEdgePoints.Start], _cm.Vertices[nextTriCurrentEdgePoints.End], Color.white);
                                             _onEdge = false;
                                             foundNextEdge = true;
                                             totalDistanceChecked = distance;
