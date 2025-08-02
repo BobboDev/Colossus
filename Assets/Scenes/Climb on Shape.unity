@@ -568,7 +568,7 @@ Transform:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 141417623}
   serializedVersion: 2
-  m_LocalRotation: {x: 0.34684926, y: -0.6171121, z: 0.34837213, w: 0.61441445}
+  m_LocalRotation: {x: 0.4475836, y: -0.36015314, z: 0.20331362, w: 0.79285705}
   m_LocalPosition: {x: 0, y: 0, z: 0}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
@@ -647,7 +647,7 @@ Transform:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 145028742}
   serializedVersion: 2
-  m_LocalRotation: {x: 0.34684926, y: -0.6171121, z: 0.34837213, w: 0.61441445}
+  m_LocalRotation: {x: 0.4475836, y: -0.36015314, z: 0.2033136, w: 0.792857}
   m_LocalPosition: {x: 0, y: 0, z: 0}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
@@ -5077,7 +5077,7 @@ Transform:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 864988009}
   serializedVersion: 2
-  m_LocalRotation: {x: 0.35140994, y: -0.61450356, z: 0.35295263, w: 0.6118177}
+  m_LocalRotation: {x: 0.45346883, y: -0.35863099, z: 0.20598708, w: 0.78950566}
   m_LocalPosition: {x: 0, y: 0, z: 0}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
@@ -5146,10 +5146,67 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 72d2cdb1c46ebaa4987ea7410b8eed80, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  SkinnedMeshRenderer: {fileID: 0}
+  SkinnedMeshRenderer: {fileID: 908213838}
   MeshFilter: {fileID: 0}
-  Areas: []
-  selectedKey: 
+  Areas:
+  - Key: New Area 1
+    Value:
+      AreaName: New Area 1
+      TrianglesInSelection: 0b00000007000000010000000a0000000c0000000d0000002c0000002b000000290000002a0000002800000027000000250000002300000024000000220000002600000020000000210000001d0000001e0000001f0000001c0000001b0000001a0000001800000019000000160000001500000017000000140000001300000010000000110000000e000000090000000800000005000000000000000200000003000000040000000f0000000600000012000000
+  selectedKey: New Area 1
+--- !u!137 &908213838
+SkinnedMeshRenderer:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 908213830}
+  m_Enabled: 1
+  m_CastShadows: 1
+  m_ReceiveShadows: 1
+  m_DynamicOccludee: 1
+  m_StaticShadowCaster: 0
+  m_MotionVectors: 1
+  m_LightProbeUsage: 1
+  m_ReflectionProbeUsage: 1
+  m_RayTracingMode: 3
+  m_RayTraceProcedural: 0
+  m_RenderingLayerMask: 1
+  m_RendererPriority: 0
+  m_Materials:
+  - {fileID: 2100000, guid: ac0fa2f3d7139704ba1ad516325833cc, type: 2}
+  m_StaticBatchInfo:
+    firstSubMesh: 0
+    subMeshCount: 0
+  m_StaticBatchRoot: {fileID: 0}
+  m_ProbeAnchor: {fileID: 0}
+  m_LightProbeVolumeOverride: {fileID: 0}
+  m_ScaleInLightmap: 1
+  m_ReceiveGI: 1
+  m_PreserveUVs: 0
+  m_IgnoreNormalsForChartDetection: 0
+  m_ImportantGI: 0
+  m_StitchLightmapSeams: 1
+  m_SelectedEditorRenderState: 3
+  m_MinimumChartSize: 4
+  m_AutoUVMaxDistance: 0.5
+  m_AutoUVMaxAngle: 89
+  m_LightmapParameters: {fileID: 0}
+  m_SortingLayerID: 0
+  m_SortingLayer: 0
+  m_SortingOrder: 0
+  serializedVersion: 2
+  m_Quality: 0
+  m_UpdateWhenOffscreen: 0
+  m_SkinnedMotionVectors: 1
+  m_Mesh: {fileID: -1807450908316315865, guid: 05e1ab46c57576443bacacd0e4b0b2d3, type: 3}
+  m_Bones: []
+  m_BlendShapeWeights: []
+  m_RootBone: {fileID: 851884157}
+  m_AABB:
+    m_Center: {x: -0.0023816228, y: 0.9901407, z: -0.006530136}
+    m_Extent: {x: 1.0169182, y: 0.19191703, z: 0.9676486}
+  m_DirtyAABB: 0
 --- !u!1001 &924448010
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -7861,8 +7918,8 @@ Transform:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1382542760}
   serializedVersion: 2
-  m_LocalRotation: {x: 0.35140994, y: -0.6145036, z: 0.35295263, w: 0.61181766}
-  m_LocalPosition: {x: -0.8500166, y: -10.23, z: 20.634666}
+  m_LocalRotation: {x: 0.45346874, y: -0.3586309, z: 0.2059869, w: 0.78950584}
+  m_LocalPosition: {x: -1.4020758, y: -10.14, z: 20.038664}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
@@ -8112,7 +8169,7 @@ Transform:
   m_GameObject: {fileID: 1394487261}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: -0.8500166, y: -10.23, z: 20.634666}
+  m_LocalPosition: {x: -1.4020758, y: -10.14, z: 20.038664}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children:
@@ -8301,6 +8358,10 @@ PrefabInstance:
       propertyPath: m_LocalEulerAnglesHint.z
       value: 0
       objectReference: {fileID: 0}
+    - target: {fileID: -6666211681577736855, guid: 05e1ab46c57576443bacacd0e4b0b2d3, type: 3}
+      propertyPath: m_Layer
+      value: 0
+      objectReference: {fileID: 0}
     - target: {fileID: -3688977961119269543, guid: 05e1ab46c57576443bacacd0e4b0b2d3, type: 3}
       propertyPath: m_Materials.Array.data[0]
       value: 
@@ -8313,10 +8374,15 @@ PrefabInstance:
       propertyPath: m_IsActive
       value: 1
       objectReference: {fileID: 0}
-    m_RemovedComponents: []
+    m_RemovedComponents:
+    - {fileID: -3688977961119269543, guid: 05e1ab46c57576443bacacd0e4b0b2d3, type: 3}
+    - {fileID: 1236657259075303161, guid: 05e1ab46c57576443bacacd0e4b0b2d3, type: 3}
     m_RemovedGameObjects: []
     m_AddedGameObjects: []
     m_AddedComponents:
+    - targetCorrespondingSourceObject: {fileID: -6666211681577736855, guid: 05e1ab46c57576443bacacd0e4b0b2d3, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 908213838}
     - targetCorrespondingSourceObject: {fileID: -6666211681577736855, guid: 05e1ab46c57576443bacacd0e4b0b2d3, type: 3}
       insertIndex: -1
       addedObject: {fileID: 908213833}
@@ -8580,10 +8646,10 @@ PrefabInstance:
       addedObject: {fileID: 1508121777}
     - targetCorrespondingSourceObject: {fileID: -6666211681577736855, guid: 650f8242412dfd64da8afb1597a0aff2, type: 3}
       insertIndex: -1
-      addedObject: {fileID: 1508121776}
+      addedObject: {fileID: 1508121775}
     - targetCorrespondingSourceObject: {fileID: -6666211681577736855, guid: 650f8242412dfd64da8afb1597a0aff2, type: 3}
       insertIndex: -1
-      addedObject: {fileID: 1508121775}
+      addedObject: {fileID: 1508121776}
   m_SourcePrefab: {fileID: 100100000, guid: 650f8242412dfd64da8afb1597a0aff2, type: 3}
 --- !u!4 &1508121773 stripped
 Transform:
@@ -9011,7 +9077,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 1
+  m_IsActive: 0
 --- !u!4 &1647294131
 Transform:
   m_ObjectHideFlags: 0
@@ -10832,7 +10898,7 @@ MonoBehaviour:
   - Key: Shoulder
     Value:
       AreaName: Shoulder
-      TrianglesInSelection: 500900008709000088090000ef080000e5080000ab080000a908000089090000ee08000049090000e4080000dd080000510900004a090000850900004f090000860900008d0900008e090000910900008c0900008b0900008a09000082080000810800007e08000084080000a8080000a7080000aa080000ad080000da080000840900007d090000950900007f0900009a0900009d090000a0090000ae090000b8090000ba090000c9090000cc090000d0090000dc090000f22b0000f32b0000002c0000f52b0000052c0000042c00000b2c00000f2c0000342d0000102c0000332d0000312d0000302d00002c2d0000252d0000262d0000062d0000032d0000f12c0000f42c0000eb2c0000e12c0000d52c0000dc2c00006f2a0000b6290000b1290000b3290000b2290000af290000b52900005f2a0000642a0000652a0000a2290000ad290000ae2900008f290000a4290000b7290000a3290000a62900009629000097290000902900008e2900008d290000912900009329000095290000a5290000a82900006a2a00006e2a00006b2a0000772a0000672a0000662a0000692a0000752a0000782a0000682a0000632a00005d2a0000622a00005e2a0000532a0000522a0000592a0000bb290000b8290000b4290000b029000087290000882900008c2900008b29000089290000622900008a290000dd2c0000e62c0000e72c00009d2a0000932a0000972a00009e2a0000922a00008d2a0000892a0000882a0000aa290000
+      TrianglesInSelection: 500900008709000088090000ef080000e5080000ab080000a908000089090000ee08000049090000e4080000dd080000510900004a090000850900004f090000860900008d0900008e090000910900008c0900008b0900008a09000082080000810800007e08000084080000a8080000a7080000aa080000ad080000da080000840900007d090000950900007f0900009a0900009d090000a0090000ae090000b8090000ba090000c9090000cc090000d0090000dc090000f22b0000f32b0000002c0000f52b0000052c0000042c00000b2c00000f2c0000342d0000102c0000332d0000312d0000302d00002c2d0000252d0000262d0000062d0000032d0000f12c0000f42c0000eb2c0000e12c0000d52c0000dc2c00006f2a0000b6290000b1290000b3290000b2290000af290000b52900005f2a0000642a0000652a0000a2290000ad290000ae2900008f290000a4290000b7290000a3290000a62900009629000097290000902900008e2900008d290000912900009329000095290000a5290000a82900006a2a00006e2a00006b2a0000772a0000672a0000662a0000692a0000752a0000782a0000682a0000632a00005d2a0000622a00005e2a0000532a0000522a0000592a0000bb290000b8290000b4290000b029000087290000882900008c2900008b29000089290000622900008a290000dd2c0000e62c0000e72c00009d2a0000932a0000972a00009e2a0000922a00008d2a0000892a0000882a0000aa2900007a0900006609000052090000480900004d0900005e09000065090000de080000450900004309000044090000d9080000db080000dc080000350900005f09000060090000340900003309000047090000460900006c090000d4080000d3080000cb080000d7080000d2080000cc080000ba080000ac080000c6080000bb080000
   - Key: Pec
     Value:
       AreaName: Pec
@@ -10841,7 +10907,7 @@ MonoBehaviour:
     Value:
       AreaName: Elbow
       TrianglesInSelection: d9050000e2050000e3050000ef050000e6050000e7050000f1050000e4050000830500008205000085050000d1050000d0050000c5050000d7050000da050000e1050000ee050000e8050000f0050000f8050000e5050000870500008105000078050000770500007d0500007e05000084050000890500008f050000900500008e0500008d050000880500007b0500006f050000700500006e050000720500005f0500005e05000061050000600500007c0500007f0500008a0500008c050000800500008b05000091050000550500005305000058050000590500005a0500003f0500003e050000490500004a0500005405000057050000920500009305000098050000a1050000a005000097050000950500009f05000096050000b6050000b7050000b8050000c4050000ce050000d5050000d8050000e0050000ed050000f9050000f6050000f2050000e90500008605000076050000730500007405000071050000620500005d0500005c0500005b05000010050000170500000f050000a20500009d0500009905000094050000500500005605000048050000470500003c0500003d0500001805000015050000
-  selectedKey: New Area 1
+  selectedKey: Shoulder
 --- !u!1001 &1901321082
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -11594,15 +11660,15 @@ PrefabInstance:
     m_Modifications:
     - target: {fileID: 3068431529168774640, guid: 8c3fa0b0e92df9847bd4048863ee3e95, type: 3}
       propertyPath: m_LocalPosition.x
-      value: -2.6
+      value: -2.72
       objectReference: {fileID: 0}
     - target: {fileID: 3068431529168774640, guid: 8c3fa0b0e92df9847bd4048863ee3e95, type: 3}
       propertyPath: m_LocalPosition.y
-      value: -13.23
+      value: -13.14
       objectReference: {fileID: 0}
     - target: {fileID: 3068431529168774640, guid: 8c3fa0b0e92df9847bd4048863ee3e95, type: 3}
       propertyPath: m_LocalPosition.z
-      value: 20.627
+      value: 21.19
       objectReference: {fileID: 0}
     - target: {fileID: 3068431529168774640, guid: 8c3fa0b0e92df9847bd4048863ee3e95, type: 3}
       propertyPath: m_LocalRotation.w

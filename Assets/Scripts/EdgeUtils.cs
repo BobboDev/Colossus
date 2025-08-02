@@ -458,7 +458,8 @@ public class EdgeUtils
                     {
                         if (farEdgeHitDistance > 0 && farEdgeHitDistance <= Vector3.Distance(cm.Vertices[e.pointA], cm.Vertices[e.pointB]))
                         {
-                            planeHitsFarEdge = true;
+                            if (Vector3.Dot((cm.Vertices[currentCornerInt] - farEdgeRay.GetPoint(farEdgeHitDistance)).normalized, playerTransform.forward) > 0)
+                                planeHitsFarEdge = true;
                         }
                     }
                 }

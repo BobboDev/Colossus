@@ -740,6 +740,15 @@ public class ClimbShape : MonoBehaviour
 
                                         // check if we are pointing towards the other edge (not the next edge attached to corner)
                                         // if so, we can come unstuck.
+                                        // Create plane to calculate "cuts" from
+                                        if (_movementMode == MovementMode.Car)
+                                        {
+                                            _plane = new Plane(CharacterModel.rotation * (Quaternion.Euler(0, 90, 0) * _input), _cm.Vertices[_cornerReached]);
+                                        }
+                                        else
+                                        {
+                                            _plane = new Plane(CharacterModel.right, _cm.Vertices[_cornerReached]);
+                                        }
                                         if (EdgeUtils.GetFarEdgeCut(_cm, transform, _input, _cornerReached, tempIndex, _currentEdgePoints, nextTriCurrentEdgePoints, cornerEdgePoints, _plane))
                                         {
                                             _index = tempIndex;
