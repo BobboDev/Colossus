@@ -21,21 +21,23 @@ public class EdgeUtils
         }
     }
 
-    public static void GetOrderedEdgePointsFromEdge(ClimbableMesh cm, int firstPointOnEdge, Edge e, ref EdgePoints edgePoints)
+    public static void SetOrderedEdgePoints(ClimbableMesh cm, Edge edge, int pointToCompare, ref EdgePoints edgePoints)
     {
-        if (cm.Vertices[e.pointA] == cm.Vertices[firstPointOnEdge])
+        if (VertexPositionsAreMatching(cm, edge.pointA, pointToCompare))
         {
-            edgePoints.Start = e.pointA;
-            edgePoints.End = e.pointB;
+            edgePoints.Start = edge.pointA;
+            edgePoints.End = edge.pointB;
         }
-        else
+        else if (VertexPositionsAreMatching(cm, edge.pointB, pointToCompare))
         {
-            edgePoints.Start = e.pointB;
-            edgePoints.End = e.pointA;
+            edgePoints.Start = edge.pointB;
+            edgePoints.End = edge.pointA;
         }
+
+        edgePoints.Other = GetOtherVertexIndex(cm, edge);
     }
 
-    public static void SetOrderedEdgePoints(ClimbableMesh cm, Edge edge, int pointToCompare, ref EdgePoints edgePoints)
+    public static void SetOrderedEdgePointsFromTriangle(ClimbableMesh cm, Edge edge, int pointToCompare, int triangleIndex, ref EdgePoints edgePoints)
     {
         if (VertexPositionsAreMatching(cm, edge.pointA, pointToCompare))
         {
@@ -48,7 +50,7 @@ public class EdgeUtils
             edgePoints.Start = edge.pointA;
         }
 
-        edgePoints.Other = GetOtherVertexIndex(cm, edge);
+        edgePoints.Other = GetOtherVertexIndexFromTriangle(cm, edgePoints, triangleIndex);
     }
 
     public static int GetMatchingPointOnEdgeFromPosition(ClimbableMesh _cm, Vector3 position, EdgePoints edgePoints)
@@ -279,14 +281,7 @@ public class EdgeUtils
     {
         int firstTriAdjacentToEdge = cm.EdgeAdjacencyInfo[edge].triangleA;
         int secondTriAdjacentToEdge = cm.EdgeAdjacencyInfo[edge].triangleB;
-        if (firstTriAdjacentToEdge == secondTriAdjacentToEdge)
-        {
-            Debug.Log($"Edges Match! triangleA: {cm.EdgeAdjacencyInfo[edge].triangleA} triangleB: {cm.EdgeAdjacencyInfo[edge].triangleB}");
-        }
-        else
-        {
-            Debug.Log($"Edges Different! triangleA: {cm.EdgeAdjacencyInfo[edge].triangleA} triangleB: {cm.EdgeAdjacencyInfo[edge].triangleB}");
-        }
+
         return firstTriAdjacentToEdge == secondTriAdjacentToEdge;
     }
 
@@ -321,7 +316,7 @@ public class EdgeUtils
         return -1;
     }
 
-    public static int GetOtherVertexIndexFromTriangle(EdgePoints cornerEdge, int triangleIndex, ClimbableMesh _cm)
+    public static int GetOtherVertexIndexFromTriangle(ClimbableMesh _cm, EdgePoints cornerEdge, int triangleIndex)
     {
         foreach (Edge e in _cm.TriangleAdjacencyInfo[triangleIndex].edges)
         {
@@ -426,7 +421,7 @@ public class EdgeUtils
 
     public static Ray CreateRay(Vector3 point1, Vector3 point2) => new Ray { origin = point1, direction = (point2 - point1).normalized };
 
-    public static bool GetFarEdgeCut(ClimbableMesh cm, Transform playerTransform, Vector3 input, int currentCornerInt, int triangleIndex, EdgePoints currentEdgePoints, EdgePoints nextTriCurrentEdgePoints, EdgePoints cornerEdgePoints, Plane plane)
+    public static bool GetFarEdgeCut(ClimbableMesh cm, Transform playerTransform, Vector3 input, int currentCornerInt, int triangleIndex, EdgePoints currentEdgePoints, EdgePoints nextTriCurrentEdgePoints, EdgePoints cornerEdgePoints, Plane plane, MovementMode movementMode)
     {
         Vector3 triCenter = (cm.Vertices[cornerEdgePoints.Start] + cm.Vertices[cornerEdgePoints.End] + cm.Vertices[cornerEdgePoints.Other]) / 3;
         Vector3 closestPointOnEdge = Mathf2.NearestPointOnLine(cm.Vertices[cornerEdgePoints.Start], (cm.Vertices[cornerEdgePoints.Start] - cm.Vertices[cornerEdgePoints.End]).normalized, triCenter);
@@ -458,7 +453,8 @@ public class EdgeUtils
                     {
                         if (farEdgeHitDistance > 0 && farEdgeHitDistance <= Vector3.Distance(cm.Vertices[e.pointA], cm.Vertices[e.pointB]))
                         {
-                            if (Vector3.Dot((cm.Vertices[currentCornerInt] - farEdgeRay.GetPoint(farEdgeHitDistance)).normalized, playerTransform.forward) > 0)
+                            Vector3 forwardDirection = movementMode == MovementMode.Car ? (playerTransform.rotation * input).normalized : playerTransform.forward;
+                            if (Vector3.Dot((cm.Vertices[currentCornerInt] - farEdgeRay.GetPoint(farEdgeHitDistance)).normalized, forwardDirection) > 0)
                                 planeHitsFarEdge = true;
                         }
                     }

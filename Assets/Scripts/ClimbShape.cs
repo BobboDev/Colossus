@@ -459,17 +459,20 @@ public class ClimbShape : MonoBehaviour
                 Vector3 movePositionAttempt = _newPosition + newDirection * remainingDistance;
                 Vector3 slidePoint = Mathf2.GetClosestPointOnFiniteLine(movePositionAttempt, _cm.Vertices[_currentEdgePoints.Start], _cm.Vertices[_currentEdgePoints.End]);
 
-                int currentCornerInt = -1;
-                int currentCornerIntOther = 0;
+                EdgePoints cornerEdgePoints = new();
+                cornerEdgePoints.Set(-1, 0, 0);
+                cornerEdgePoints.Start = -1;
+                cornerEdgePoints.Other = 0;
+
                 if (slidePoint == _cm.Vertices[_currentEdgePoints.Start])
                 {
-                    currentCornerInt = _currentEdgePoints.Start;
-                    currentCornerIntOther = _currentEdgePoints.End;
+                    cornerEdgePoints.Start = _currentEdgePoints.Start;
+                    cornerEdgePoints.Other = _currentEdgePoints.End;
                 }
                 if (slidePoint == _cm.Vertices[_currentEdgePoints.End])
                 {
-                    currentCornerInt = _currentEdgePoints.End;
-                    currentCornerIntOther = _currentEdgePoints.Start;
+                    cornerEdgePoints.Start = _currentEdgePoints.End;
+                    cornerEdgePoints.Other = _currentEdgePoints.Start;
                 }
 
                 ////////////////////////////////
@@ -487,15 +490,15 @@ public class ClimbShape : MonoBehaviour
                 ////////////////////////////////
 
                 // if we reached a corner
-                if (currentCornerInt != -1)
+                if (cornerEdgePoints.Start != -1)
                 {
                     totalDistanceChecked = EdgeUtils.MeasureAttemptedSlideAlongEdgeThisFrame(distance, totalDistanceChecked, _newPosition, movePositionAttempt, slidePoint);
 
                     // If the next edge is another outside edge on the same triangle, switch to that. 
-                    if (EdgeUtils.NextEdgeIsOnThisTriangle(_cm, out var nextEdgeOnThisTriangle, _currentEdgePoints, currentCornerInt))
+                    if (EdgeUtils.NextEdgeIsOnThisTriangle(_cm, out var nextEdgeOnThisTriangle, _currentEdgePoints, cornerEdgePoints.Start))
                     {
                         // Switch to that edge
-                        _currentEdgePoints.Set(nextEdgeOnThisTriangle.pointA, nextEdgeOnThisTriangle.pointB, currentCornerIntOther);
+                        _currentEdgePoints.Set(nextEdgeOnThisTriangle.pointA, nextEdgeOnThisTriangle.pointB, cornerEdgePoints.Other);
                     }
                     else // If the next edge isn't an outside edge on the same triangle
                     {
@@ -554,7 +557,7 @@ public class ClimbShape : MonoBehaviour
                         List<Edge> checkedEdges = new List<Edge>();
                         List<Edge> checkedEdgesCorner = new List<Edge>();
 
-                        EdgePoints cornerEdgePoints = new(true);
+                        cornerEdgePoints.Set(-1, -1, -1);
 
                         int cornerTriangleIndex = tempIndex;
 
@@ -587,17 +590,7 @@ public class ClimbShape : MonoBehaviour
                                     // and it's an outside edge
                                     if (EdgeUtils.EdgeIsOutsideEdge(e, _cm))
                                     {
-                                        if (_cm.Vertices[e.pointA] == _cm.Vertices[_cornerReached])
-                                        {
-                                            cornerEdgePoints.Start = e.pointA;
-                                            cornerEdgePoints.End = e.pointB;
-                                        }
-                                        else if (_cm.Vertices[e.pointB] == _cm.Vertices[_cornerReached])
-                                        {
-                                            cornerEdgePoints.Start = e.pointB;
-                                            cornerEdgePoints.End = e.pointA;
-                                        }
-                                        cornerEdgePoints.Other = EdgeUtils.GetOtherVertexIndexFromTriangle(cornerEdgePoints, cornerTriangleIndex, _cm);
+                                        EdgeUtils.SetOrderedEdgePointsFromTriangle(_cm, e, _cornerReached, cornerTriangleIndex, ref cornerEdgePoints);
                                     }
                                     else
                                     {
@@ -734,9 +727,7 @@ public class ClimbShape : MonoBehaviour
                                         tempIndex = EdgeUtils.GetOtherTriangleOnEdgeFromAdjacencyInfo(_cm, e, tempIndex);
 
                                         checkedEdges.Add(e);
-                                        EdgeUtils.GetOrderedEdgePointsFromEdge(_cm, _cornerReached, e, ref nextTriCurrentEdgePoints);
-
-                                        nextTriCurrentEdgePoints.Other = EdgeUtils.GetOtherVertexIndexFromTriangle(nextTriCurrentEdgePoints, tempIndex, _cm);
+                                        EdgeUtils.SetOrderedEdgePointsFromTriangle(_cm, e, _cornerReached, tempIndex, ref nextTriCurrentEdgePoints);
 
                                         // check if we are pointing towards the other edge (not the next edge attached to corner)
                                         // if so, we can come unstuck.
@@ -749,7 +740,7 @@ public class ClimbShape : MonoBehaviour
                                         {
                                             _plane = new Plane(CharacterModel.right, _cm.Vertices[_cornerReached]);
                                         }
-                                        if (EdgeUtils.GetFarEdgeCut(_cm, transform, _input, _cornerReached, tempIndex, _currentEdgePoints, nextTriCurrentEdgePoints, cornerEdgePoints, _plane))
+                                        if (EdgeUtils.GetFarEdgeCut(_cm, transform, _input, _cornerReached, tempIndex, _currentEdgePoints, nextTriCurrentEdgePoints, cornerEdgePoints, _plane, _movementMode))
                                         {
                                             _index = tempIndex;
                                             _lastIndex = tempLastIndex;
@@ -844,9 +835,15 @@ public class ClimbShape : MonoBehaviour
         }
         else
         {
-            _testPlane = new Plane(-(Quaternion.FromToRotation(transform.up, groundNormal) * transform.right), triCenter);
-            if (isFinalPass)
+            if (!isFinalPass)
+            {
+                _testPlane = new Plane(-(Quaternion.FromToRotation(transform.up, groundNormal) * transform.right), triCenter);
+
+            }
+            else
+            {
                 _testPlane = new Plane(-CharacterModel.right, triCenter);
+            }
         }
         _testCut = Vector3.zero;
         _testCut = EdgeUtils.FindTrianglePlaneIntersection(_cm, ref _currentEdgePoints, _currentEdgePoints, _index, _lastIndex, ref _firstMoveDone, _castDirectionTest, triCenter, _testPlane, CutType.Test);
