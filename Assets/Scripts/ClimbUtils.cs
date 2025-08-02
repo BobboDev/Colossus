@@ -7,6 +7,15 @@ using System;
 public class ClimbUtils
 {
 
+    public static void GetGroundNormal(ClimbableMesh cm, out Vector3 groundNormal, Vector3 barycentricCoordinate, EdgePoints currentEdgePoints, int currentTriangleIndex)
+    {
+        // Get the 'outer' edge points to the current triangle
+        EdgeUtils.GetMatchingEdgeOnAdjacentTriangle(cm, out var edgePointsAdjacentToCurrent, currentEdgePoints, currentTriangleIndex);
+
+        // Calculate the ground normal based on coordinates from the last frame of where we should be standing, translated to the new, deformed triangle
+        groundNormal = EdgeUtils.GetNormalFromBarycentric(cm, barycentricCoordinate, edgePointsAdjacentToCurrent);
+    }
+
     public static void HandleMovementModeSwitch(
         ClimbableMesh cm,
         Transform playerTransform,

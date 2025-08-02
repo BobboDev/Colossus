@@ -153,17 +153,15 @@ public class ClimbShape : MonoBehaviour
         transform.position = pointOnTriangle;
 
         // Calculate the the direction towards the FORWARD facing point, NOT the movement facing point
-        Vector3 forwardFromRecordedBarycentric = (forwardPointOnTriangle - behindPointOnTriangle).normalized;
 
         // Switch movement mode based on input
         ClimbUtils.HandleMovementModeSwitch(_cm, transform, ref _currentEdgePoints, ref _index, ref _lastIndex, ref _firstMoveDone, ref _testCut, ref _barycentricCoordinate, ref _lastBarycentricCoordinate, ref _barycentricCoordinateBehind, ref _movementMode, ref _newPosition, ref _onEdge);
 
-        EdgeUtils.GetMatchingEdgeOnAdjacentTriangle(_cm, out var edgeAdjacentToCurrent, _currentEdgePoints, _index);
-
-        // Calculate the ground normal based on coordinates from the last frame of where we should be standing, translated to the new, deformed triangle
-        Vector3 groundNormal = EdgeUtils.GetNormalFromBarycentric(_cm, _barycentricCoordinate, edgeAdjacentToCurrent);
+        ClimbUtils.GetGroundNormal(_cm, out Vector3 groundNormal, _barycentricCoordinate, _currentEdgePoints, _index);
 
         float turnAngle = 0;
+
+        Vector3 forwardFromRecordedBarycentric = (forwardPointOnTriangle - behindPointOnTriangle).normalized;
 
         turnAngle += Input.GetKey(KeyCode.E) ? 100 * Time.deltaTime : 0;
         turnAngle -= Input.GetKey(KeyCode.Q) ? 100 * Time.deltaTime : 0;
@@ -815,9 +813,7 @@ public class ClimbShape : MonoBehaviour
 
         Vector3 testPosition = EdgeUtils.GetPositionFromBarycentric(_cm, _barycentricCoordinate, _currentEdgePoints);
 
-        EdgeUtils.GetMatchingEdgeOnAdjacentTriangle(_cm, out edgeAdjacentToCurrent, _currentEdgePoints, _index);
-
-        groundNormal = EdgeUtils.GetNormalFromBarycentric(_cm, _barycentricCoordinate, edgeAdjacentToCurrent);
+        ClimbUtils.GetGroundNormal(_cm, out groundNormal, _barycentricCoordinate, _currentEdgePoints, _index);
 
         _castDirectionTest = Quaternion.FromToRotation(transform.up, groundNormal) * transform.forward;
 
