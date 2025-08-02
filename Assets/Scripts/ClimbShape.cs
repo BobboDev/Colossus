@@ -458,22 +458,14 @@ public class ClimbShape : MonoBehaviour
                 // get the point where the character is trying to move, if it moved off the current tri into space
                 Vector3 movePositionAttempt = _newPosition + newDirection * remainingDistance;
                 Vector3 slidePoint = Mathf2.GetClosestPointOnFiniteLine(movePositionAttempt, _cm.Vertices[_currentEdgePoints.Start], _cm.Vertices[_currentEdgePoints.End]);
-
-                EdgePoints cornerEdgePoints = new();
-                cornerEdgePoints.Set(-1, 0, 0);
-                cornerEdgePoints.Start = -1;
-                cornerEdgePoints.Other = 0;
+                EdgePoints cornerEdgePoints = new(true);
 
                 if (slidePoint == _cm.Vertices[_currentEdgePoints.Start])
-                {
-                    cornerEdgePoints.Start = _currentEdgePoints.Start;
-                    cornerEdgePoints.Other = _currentEdgePoints.End;
-                }
+                    cornerEdgePoints.Set(_currentEdgePoints.Start, 0, _currentEdgePoints.End);
+
                 if (slidePoint == _cm.Vertices[_currentEdgePoints.End])
-                {
-                    cornerEdgePoints.Start = _currentEdgePoints.End;
-                    cornerEdgePoints.Other = _currentEdgePoints.Start;
-                }
+                    cornerEdgePoints.Set(_currentEdgePoints.End, 0, _currentEdgePoints.Start);
+
 
                 ////////////////////////////////
                 //                            //
@@ -490,7 +482,9 @@ public class ClimbShape : MonoBehaviour
                 ////////////////////////////////
 
                 // if we reached a corner
-                if (cornerEdgePoints.Start != -1)
+                bool cornerReached = cornerEdgePoints.Start != -1;
+
+                if (cornerReached)
                 {
                     totalDistanceChecked = EdgeUtils.MeasureAttemptedSlideAlongEdgeThisFrame(distance, totalDistanceChecked, _newPosition, movePositionAttempt, slidePoint);
 
@@ -743,10 +737,8 @@ public class ClimbShape : MonoBehaviour
                                         if (EdgeUtils.GetFarEdgeCut(_cm, transform, _input, _cornerReached, tempIndex, _currentEdgePoints, ref nextTriCurrentEdgePoints, cornerEdgePoints, _plane, _movementMode))
                                         {
                                             _index = tempIndex;
-                                            // EdgeUtils.DebugTriangle(_cm, _index, Color.white);
                                             _lastIndex = tempLastIndex;
                                             _currentEdgePoints.Set(nextTriCurrentEdgePoints.Start, nextTriCurrentEdgePoints.End, nextTriCurrentEdgePoints.Other);
-                                            Debug.DrawLine(_cm.Vertices[nextTriCurrentEdgePoints.Start], _cm.Vertices[nextTriCurrentEdgePoints.End], Color.white);
                                             _onEdge = false;
                                             foundNextEdge = true;
                                             totalDistanceChecked = distance;

@@ -461,15 +461,10 @@ public class EdgeUtils
 
                             Vector3 forwardDirection = movementMode == MovementMode.Car ? (playerTransform.rotation * input).normalized : playerTransform.forward;
 
-                            // Debug.DrawLine(playerTransform.position, playerTransform.position + (playerTransform.rotation * input).normalized, Color.white); //good!
-                            // Debug.DrawLine(playerTransform.position, playerTransform.position + playerTransform.forward, Color.magenta); //good!
-                            Debug.DrawLine(playerTransform.position, playerTransform.position + (farEdgeRay.GetPoint(farEdgeHitDistance) - cm.Vertices[currentCornerInt]).normalized, Color.green);
-
                             if (Vector3.Dot((farEdgeRay.GetPoint(farEdgeHitDistance) - cm.Vertices[currentCornerInt]).normalized, forwardDirection) > 0)
                             {
                                 planeHitsFarEdge = true;
                                 nextTriCurrentEdgePoints.Set(e.pointA, e.pointB, currentCornerInt);
-                                // Debug.DrawLine(cm.Vertices[e.pointA], cm.Vertices[e.pointB], Color.red);
                             }
                         }
                     }
