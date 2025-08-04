@@ -8,6 +8,20 @@ using TMPro.EditorUtilities;
 
 public class EdgeUtils
 {
+    public static bool CornersAreConvex(ClimbableMesh cm, EdgePoints _currentEdgePoints, EdgePoints _lastEdgePoints)
+    {
+        Vector3 closestPointOnEdge = GetClosestPointOnEdge(cm, _currentEdgePoints);
+        Vector3 previousClosestPointOnEdge = GetClosestPointOnEdge(cm, _lastEdgePoints);
+
+        Vector3 lastEdgeNormal = GetEdgeNormalFromEdgePoints(cm, _currentEdgePoints);
+        Vector3 newEdgeNormal = GetEdgeNormalFromEdgePoints(cm, _lastEdgePoints);
+
+        Ray ray1 = CreateRayFromDirection(closestPointOnEdge, -newEdgeNormal);
+        Ray ray2 = CreateRayFromDirection(previousClosestPointOnEdge, -lastEdgeNormal);
+
+        return DoRaysIntersect(ray1, ray2);
+    }
+
     public static bool EdgeHasBeenRuledOut(ClimbableMesh cm, Edge currentEdge, List<Edge> unsuitableCornerEdges, List<Edge> checkedEdges)
     {
         // we need to use a different method for contains - checking by their positions, since hard edges has different indices
@@ -29,11 +43,13 @@ public class EdgeUtils
         }
         return !(alreadyPassedThisEdge && !checkedEdgesContainsEdge);
     }
+
     public static Vector3 GetClosestPointOnEdge(ClimbableMesh cm, EdgePoints currentEdgePoints)
     {
         Vector3 triCenter = GetTriangleCenter(cm, currentEdgePoints);
         return Mathf2.NearestPointOnLine(cm.Vertices[currentEdgePoints.Start], (cm.Vertices[currentEdgePoints.Start] - cm.Vertices[currentEdgePoints.End]).normalized, triCenter);
     }
+
     public static Vector3 GetTriangleCenter(ClimbableMesh cm, EdgePoints edgePoints)
     {
         return (cm.Vertices[edgePoints.Start] + cm.Vertices[edgePoints.End] + cm.Vertices[edgePoints.Other]) / 3;
@@ -458,6 +474,7 @@ public class EdgeUtils
     }
 
     public static Ray CreateRay(Vector3 point1, Vector3 point2) => new Ray { origin = point1, direction = (point2 - point1).normalized };
+    public static Ray CreateRayFromDirection(Vector3 origin, Vector3 direction) => new Ray { origin = origin, direction = direction };
 
     public static bool GetFarEdgeCut(ClimbableMesh cm, Transform playerTransform, Vector3 input, int currentCornerInt, int triangleIndex, EdgePoints currentEdgePoints, ref EdgePoints nextTriCurrentEdgePoints, EdgePoints cornerEdgePoints, Plane plane, MovementMode movementMode)
     {
@@ -764,7 +781,7 @@ public class EdgeUtils
         }
     }
 
-    public static bool IsTriAfterNextThis(ClimbableMesh cm, Transform playerTransform, Vector3 currentCheckPosition, EdgePoints currentEdgePoints, int currentTriangleIndex, int lastTriangleIndex, bool firstMoveDone, int currentCornerIndex, Vector3 input)
+    public static bool DoesFutureMoveLandOnSameTriangle(ClimbableMesh cm, Transform playerTransform, Vector3 currentCheckPosition, EdgePoints currentEdgePoints, int currentTriangleIndex, int lastTriangleIndex, bool firstMoveDone, int currentCornerIndex, Vector3 input)
     {
 
         EdgePoints edgeAdjacentToCurrent = new(true);
