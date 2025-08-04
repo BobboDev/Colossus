@@ -7,6 +7,18 @@ using System;
 public class ClimbUtils
 {
 
+    public static Vector3 GetTurnedForwardVector(Vector3 forwardVector, Vector3 groundNormal, float turnAngle)
+    {
+        forwardVector = Quaternion.Euler(
+            Vector3.Dot(groundNormal, Vector3.right) * turnAngle,
+            Vector3.Dot(groundNormal, Vector3.up) * turnAngle,
+            Vector3.Dot(groundNormal, Vector3.forward) * turnAngle)
+
+            * forwardVector;
+
+        return forwardVector;
+    }
+
     public static void GetGroundNormal(ClimbableMesh cm, out Vector3 groundNormal, Vector3 barycentricCoordinate, EdgePoints currentEdgePoints, int currentTriangleIndex)
     {
         // Get the 'outer' edge points to the current triangle
@@ -158,7 +170,7 @@ public class ClimbUtils
 
             currentEdgePoints.Set(cm.Triangles[currentTriangleIndex], cm.Triangles[currentTriangleIndex + 1], cm.Triangles[currentTriangleIndex + 2]);
 
-            Vector3 triCenter = (cm.Vertices[currentEdgePoints.Start] + cm.Vertices[currentEdgePoints.End] + cm.Vertices[currentEdgePoints.Other]) / 3;
+            Vector3 triCenter = EdgeUtils.GetTriangleCenter(cm, currentEdgePoints);
 
             Plane plane = new Plane(-playerTransform.right, triCenter);
 

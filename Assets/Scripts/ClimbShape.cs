@@ -153,24 +153,14 @@ public class ClimbShape : MonoBehaviour
         transform.position = pointOnTriangle;
 
         // Calculate the the direction towards the FORWARD facing point, NOT the movement facing point
-
         // Switch movement mode based on input
         ClimbUtils.HandleMovementModeSwitch(_cm, transform, ref _currentEdgePoints, ref _index, ref _lastIndex, ref _firstMoveDone, ref _testCut, ref _barycentricCoordinate, ref _lastBarycentricCoordinate, ref _barycentricCoordinateBehind, ref _movementMode, ref _newPosition, ref _onEdge);
-
         ClimbUtils.GetGroundNormal(_cm, out Vector3 groundNormal, _barycentricCoordinate, _currentEdgePoints, _index);
-
-        float turnAngle = 0;
 
         Vector3 forwardFromRecordedBarycentric = (forwardPointOnTriangle - behindPointOnTriangle).normalized;
 
-        turnAngle += Input.GetKey(KeyCode.E) ? 100 * Time.deltaTime : 0;
-        turnAngle -= Input.GetKey(KeyCode.Q) ? 100 * Time.deltaTime : 0;
-        forwardFromRecordedBarycentric = Quaternion.Euler(
-            Vector3.Dot(groundNormal, Vector3.right) * turnAngle,
-            Vector3.Dot(groundNormal, Vector3.up) * turnAngle,
-            Vector3.Dot(groundNormal, Vector3.forward) * turnAngle)
-
-            * forwardFromRecordedBarycentric;
+        float turnAngle = (Input.GetKey(KeyCode.E) ? 100 * Time.deltaTime : 0) - (Input.GetKey(KeyCode.Q) ? 100 * Time.deltaTime : 0);
+        forwardFromRecordedBarycentric = ClimbUtils.GetTurnedForwardVector(forwardFromRecordedBarycentric, groundNormal, turnAngle);
 
         if (_movementMode == MovementMode.Directional)
         {
@@ -192,10 +182,8 @@ public class ClimbShape : MonoBehaviour
 
 
         // Get the direction towards the edge 
-        Vector3 triCenter = (_cm.Vertices[_currentEdgePoints.Start] + _cm.Vertices[_currentEdgePoints.End] + _cm.Vertices[_currentEdgePoints.Other]) / 3;
-        Vector3 closestPointOnEdge = Mathf2.NearestPointOnLine(_cm.Vertices[_currentEdgePoints.Start], (_cm.Vertices[_currentEdgePoints.Start] - _cm.Vertices[_currentEdgePoints.End]).normalized, triCenter);
-        // Vector3 getNewtempForwardDirection = Vector3.zero;
-        // Vector3 getNewtempForwardDirectionBehind = Vector3.zero;
+        Vector3 triCenter = EdgeUtils.GetTriangleCenter(_cm, _currentEdgePoints);
+        Vector3 closestPointOnEdge = EdgeUtils.GetClosestPointOnEdge(_cm, _currentEdgePoints);
 
         if (_movementMode == MovementMode.Directional)
         {
@@ -224,14 +212,9 @@ public class ClimbShape : MonoBehaviour
                 if (!depenetratePass)
                 {
                     _afterDepenetrateRotation = Quaternion.LookRotation(Vector3.ProjectOnPlane(forwardFromRecordedBarycentric, Vector3.up).normalized, Vector3.up);
-
                 }
                 if (isFinalPass)
                 {
-                    if (!_goForwardTest)
-                    {
-                        // EditorApplication.isPaused = true;
-                    }
                     CharacterModel.rotation = _afterDepenetrateRotation;
                 }
             }
@@ -248,11 +231,10 @@ public class ClimbShape : MonoBehaviour
         // Get the move direction relative to the player's orientation
         _moveDirection = (transform.rotation * _input).normalized;
 
-        // moveDirection = Mathf2.RotateAroundAxis(input, Vector3.up, Camera.main.transform.rotation.eulerAngles.y);
         // newDirection - can't remember what this does but it's possible it will change in the loop but we want to keep moveDirection the same.
         Vector3 newDirection = _moveDirection;
 
-        //calculate distance to move
+        // calculate distance to move
         Vector3 _checkPositionStart = CharacterModel.position + CharacterModel.up * 0.05f;
         Vector3 _checkPositionEnd = CharacterModel.position + CharacterModel.up * 0.15f;
         Collider[] colliders = Physics.OverlapCapsule(_checkPositionStart, _checkPositionEnd, 0.05f, _layerMaskForwardProjection);
@@ -270,21 +252,17 @@ public class ClimbShape : MonoBehaviour
 
             if (colliders.Length > 0)
             {
-
                 foreach (Collider col in colliders)
                 {
                     Debug.Log("Found Collision " + col.name);
                     Physics.ComputePenetration(DepenetrationCapsule, DepenetrationCapsule.transform.position, DepenetrationCapsule.transform.rotation, col, col.transform.position, col.transform.rotation, out depenetrationDirection, out depenetrationDistance);
-                    // Debug.DrawLine(transform.position, transform.position + depenetrationDirection * depenetrationDistance, Color.yellow);
                     if (depenetrationDistance > 0.00001f)
                     {
                         totalDepenetrationDirection += Vector3.ProjectOnPlane(depenetrationDirection * depenetrationDistance, groundNormal);
-                        // Debug.DrawLine(transform.position, transform.position + totalDepenetrationDirection, Color.red);
                     }
                 }
-                // Don't need to average this! Additive is better.
-                // totalDepenetrationDirection /= (float)colliders.Length;
 
+                // Don't need to average this! Additive is better.
                 Plane wallPlane = new();
                 Vector3 wallNormal = depenetrationDirection.normalized;
                 wallPlane.SetNormalAndPosition(wallNormal, depenetrationDirection * depenetrationDistance);
@@ -293,10 +271,8 @@ public class ClimbShape : MonoBehaviour
                 depenetrateRay.direction = totalDepenetrationDirection.normalized;
                 depenetrateRay.origin = Vector3.zero;
                 wallPlane.Raycast(depenetrateRay, out distance);
-                // Vector3 pointWhereDepenetrationDirectionAndGroundIntersect = ;
                 distance *= 1f;
 
-                // distance = totalDepenetrationDirection.magnitude * 0.9f;
                 forwardFromRecordedBarycentric = totalDepenetrationDirection.normalized;
 
                 _moveDirection = forwardFromRecordedBarycentric;
@@ -307,7 +283,6 @@ public class ClimbShape : MonoBehaviour
             }
             else
             {
-                // distance = totalDepenetrationDirection.magnitude * 0.9f;
                 forwardFromRecordedBarycentric = totalDepenetrationDirection.normalized;
 
                 _moveDirection = forwardFromRecordedBarycentric;
@@ -381,10 +356,6 @@ public class ClimbShape : MonoBehaviour
 
         // Why do we need lastIndex, previousLastIndex and previousIndex?
 
-        // lastIndex is
-        // previousLastIndex is
-        // previousIndex is
-
         _previousLastIndex = _index;
         _lastEdgePoints.Set(_currentEdgePoints.Start, _currentEdgePoints.End, _currentEdgePoints.Other);
 
@@ -448,23 +419,10 @@ public class ClimbShape : MonoBehaviour
 #endif
                         break;
                     }
-                    Plane tempPlane = new Plane(-transform.right, transform.position);
                 }
             }
             else // if on edge
             {
-                // get the point where the character is trying to move, if it moved off the current tri into space
-                Vector3 movePositionAttempt = _newPosition + newDirection * remainingDistance;
-                Vector3 slidePoint = Mathf2.GetClosestPointOnFiniteLine(movePositionAttempt, _cm.Vertices[_currentEdgePoints.Start], _cm.Vertices[_currentEdgePoints.End]);
-                EdgePoints cornerEdgePoints = new(true);
-
-                if (slidePoint == _cm.Vertices[_currentEdgePoints.Start])
-                    cornerEdgePoints.Set(_currentEdgePoints.Start, 0, _currentEdgePoints.End);
-
-                if (slidePoint == _cm.Vertices[_currentEdgePoints.End])
-                    cornerEdgePoints.Set(_currentEdgePoints.End, 0, _currentEdgePoints.Start);
-
-
                 ////////////////////////////////
                 //                            //
                 //   !!!!!!!!!!!!!!!!!!!!!!   //
@@ -478,6 +436,18 @@ public class ClimbShape : MonoBehaviour
                 //   !!!!!!!!!!!!!!!!!!!!!!   //
                 //                            //
                 ////////////////////////////////
+
+
+                // get the point where the character is trying to move, if it moved off the current tri into space
+                Vector3 movePositionAttempt = _newPosition + newDirection * remainingDistance;
+                Vector3 slidePoint = Mathf2.GetClosestPointOnFiniteLine(movePositionAttempt, _cm.Vertices[_currentEdgePoints.Start], _cm.Vertices[_currentEdgePoints.End]);
+                EdgePoints cornerEdgePoints = new(true);
+
+                if (slidePoint == _cm.Vertices[_currentEdgePoints.Start])
+                    cornerEdgePoints.Set(_currentEdgePoints.Start, 0, _currentEdgePoints.End);
+
+                if (slidePoint == _cm.Vertices[_currentEdgePoints.End])
+                    cornerEdgePoints.Set(_currentEdgePoints.End, 0, _currentEdgePoints.Start);
 
                 // if we reached a corner
                 bool cornerReached = cornerEdgePoints.Start != -1;
@@ -503,6 +473,7 @@ public class ClimbShape : MonoBehaviour
                         // If the next edge attached to the corner is an outside edge
                         if (EdgeUtils.TryGetMatchingOutsideEdge(_cm, _index, _currentEdgePoints))
                         {
+                            // Add the non-outside edges on the corner to passed edges list
                             foreach (Edge e in _cm.EdgesAttachedToCorner[_cornerReached])
                             {
                                 if (!EdgeUtils.EdgesMatchByPosition(e, _currentEdgePoints, _cm))
@@ -553,7 +524,7 @@ public class ClimbShape : MonoBehaviour
 
                         int cornerTriangleIndex = tempIndex;
 
-                        // if we haven't found an outer edge
+                        // until we've found an outer edge
                         while (cornerEdgePoints.Start == -1)
                         {
                             foreach (Edge e in _cm.TriangleAdjacencyInfo[cornerTriangleIndex].edges)
@@ -617,6 +588,7 @@ public class ClimbShape : MonoBehaviour
                                 break;
                             }
                         }
+                        // until we've found 
                         while (!foundNextEdge)
                         {
                             // we need to use a different method for contains - checking by their positions, since hard edges has different indices
@@ -654,22 +626,17 @@ public class ClimbShape : MonoBehaviour
 
                                         _currentEdgePoints.Start = e.pointA;
                                         _currentEdgePoints.End = e.pointB;
+                                        _currentEdgePoints.Other = EdgeUtils.GetOtherVertexIndex(_cm, _currentEdgePoints);
 
                                         _lastIndex = tempLastIndex;
                                         _index = tempIndex;
-
-                                        _currentEdgePoints.Other = EdgeUtils.GetOtherVertexIndex(_cm, _currentEdgePoints);
-
-                                        triCenter = (_cm.Vertices[_currentEdgePoints.Start] + _cm.Vertices[_currentEdgePoints.End] + _cm.Vertices[_currentEdgePoints.Other]) / 3;
-                                        closestPointOnEdge = Mathf2.NearestPointOnLine(_cm.Vertices[_currentEdgePoints.Start], (_cm.Vertices[_currentEdgePoints.Start] - _cm.Vertices[_currentEdgePoints.End]).normalized, triCenter);
-
-                                        Vector3 previousTriCenter = (_cm.Vertices[_lastEdgePoints.Start] + _cm.Vertices[_lastEdgePoints.End] + _cm.Vertices[_lastEdgePoints.Other]) / 3;
-                                        Vector3 previousClosestPointOnEdge = Mathf2.NearestPointOnLine(_cm.Vertices[_lastEdgePoints.Start], (_cm.Vertices[_lastEdgePoints.Start] - _cm.Vertices[_lastEdgePoints.End]).normalized, previousTriCenter);
-
                                         _newPosition = slidePoint;
 
-                                        Vector3 newEdgeNormal = (closestPointOnEdge - triCenter).normalized;
-                                        Vector3 lastEdgeNormal = (previousClosestPointOnEdge - previousTriCenter).normalized;
+                                        closestPointOnEdge = EdgeUtils.GetClosestPointOnEdge(_cm, _currentEdgePoints);
+                                        Vector3 previousClosestPointOnEdge = EdgeUtils.GetClosestPointOnEdge(_cm, _lastEdgePoints);
+
+                                        Vector3 lastEdgeNormal = EdgeUtils.GetEdgeNormal(_cm, e);
+                                        Vector3 newEdgeNormal = EdgeUtils.GetEdgeNormalFromEdgePoints(_cm, _lastEdgePoints);
 
                                         if (Vector3.Dot((transform.rotation * _input).normalized, (closestPointOnEdge - triCenter).normalized) < 0)
                                         {
@@ -809,7 +776,7 @@ public class ClimbShape : MonoBehaviour
 
         Vector3 updatedPosition = EdgeUtils.GetPositionFromBarycentric(_cm, _barycentricCoordinate, _currentEdgePoints);
 
-        triCenter = (_cm.Vertices[_currentEdgePoints.Start] + _cm.Vertices[_currentEdgePoints.End] + _cm.Vertices[_currentEdgePoints.Other]) / 3;
+        triCenter = EdgeUtils.GetTriangleCenter(_cm, _currentEdgePoints);
 
         Vector3 testPosition = EdgeUtils.GetPositionFromBarycentric(_cm, _barycentricCoordinate, _currentEdgePoints);
 

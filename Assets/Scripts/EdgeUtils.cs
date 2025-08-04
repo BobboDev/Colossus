@@ -8,6 +8,15 @@ using TMPro.EditorUtilities;
 
 public class EdgeUtils
 {
+    public static Vector3 GetClosestPointOnEdge(ClimbableMesh cm, EdgePoints currentEdgePoints)
+    {
+        Vector3 triCenter = GetTriangleCenter(cm, currentEdgePoints);
+        return Mathf2.NearestPointOnLine(cm.Vertices[currentEdgePoints.Start], (cm.Vertices[currentEdgePoints.Start] - cm.Vertices[currentEdgePoints.End]).normalized, triCenter);
+    }
+    public static Vector3 GetTriangleCenter(ClimbableMesh cm, EdgePoints edgePoints)
+    {
+        return (cm.Vertices[edgePoints.Start] + cm.Vertices[edgePoints.End] + cm.Vertices[edgePoints.Other]) / 3;
+    }
 
     public static int GetMatchingTriangleOnEdge(ClimbableMesh cm, int triangleIndex, Edge e)
     {
@@ -171,9 +180,17 @@ public class EdgeUtils
     }
     public static Vector3 GetEdgeNormal(ClimbableMesh cm, Edge cornerEdge)
     {
-        int cornerEdgeOther = GetOtherVertexIndex(cm, cornerEdge);
-        Vector3 triCenter = (cm.Vertices[cornerEdge.pointA] + cm.Vertices[cornerEdge.pointB] + cm.Vertices[cornerEdgeOther]) / 3;
+        EdgePoints cornerEdgePoints = new EdgePoints() { Start = cornerEdge.pointA, End = cornerEdge.pointB, Other = GetOtherVertexIndex(cm, cornerEdge) };
+        Vector3 triCenter = GetTriangleCenter(cm, cornerEdgePoints);
         Vector3 edgeNormal = (triCenter - Mathf2.NearestPointOnLine(cm.Vertices[cornerEdge.pointA], (cm.Vertices[cornerEdge.pointA] - cm.Vertices[cornerEdge.pointB]).normalized, triCenter)).normalized;
+
+        return edgeNormal;
+    }
+
+    public static Vector3 GetEdgeNormalFromEdgePoints(ClimbableMesh cm, EdgePoints edgePoints)
+    {
+        Vector3 triCenter = GetTriangleCenter(cm, edgePoints);
+        Vector3 edgeNormal = (triCenter - Mathf2.NearestPointOnLine(cm.Vertices[edgePoints.Start], (cm.Vertices[edgePoints.Start] - cm.Vertices[edgePoints.End]).normalized, triCenter)).normalized;
 
         return edgeNormal;
     }
@@ -423,9 +440,9 @@ public class EdgeUtils
 
     public static bool GetFarEdgeCut(ClimbableMesh cm, Transform playerTransform, Vector3 input, int currentCornerInt, int triangleIndex, EdgePoints currentEdgePoints, ref EdgePoints nextTriCurrentEdgePoints, EdgePoints cornerEdgePoints, Plane plane, MovementMode movementMode)
     {
-        Vector3 triCenter = (cm.Vertices[cornerEdgePoints.Start] + cm.Vertices[cornerEdgePoints.End] + cm.Vertices[cornerEdgePoints.Other]) / 3;
+        Vector3 triCenter = GetTriangleCenter(cm, cornerEdgePoints);
         Vector3 closestPointOnEdge = Mathf2.NearestPointOnLine(cm.Vertices[cornerEdgePoints.Start], (cm.Vertices[cornerEdgePoints.Start] - cm.Vertices[cornerEdgePoints.End]).normalized, triCenter);
-        Vector3 nextTriCenter = (cm.Vertices[nextTriCurrentEdgePoints.Start] + cm.Vertices[nextTriCurrentEdgePoints.End] + cm.Vertices[nextTriCurrentEdgePoints.Other]) / 3;
+        Vector3 nextTriCenter = GetTriangleCenter(cm, nextTriCurrentEdgePoints);
         Vector3 nextTriClosestPointOnEdge = Mathf2.NearestPointOnLine(cm.Vertices[nextTriCurrentEdgePoints.Start], (cm.Vertices[nextTriCurrentEdgePoints.Start] - cm.Vertices[nextTriCurrentEdgePoints.End]).normalized, nextTriCenter);
 
         Vector3 cornerNormal = Vector3.Cross(cm.Vertices[cornerEdgePoints.Start] - cm.Vertices[cornerEdgePoints.Other], cm.Vertices[cornerEdgePoints.Start] - cm.Vertices[cornerEdgePoints.End]).normalized;
@@ -733,10 +750,8 @@ public class EdgeUtils
 
         Vector3 tempBarycentricCoordinate = Mathf2.GetBarycentricCoordinates(currentCheckPosition, cm.Vertices[currentEdgePoints.Start], cm.Vertices[currentEdgePoints.End], cm.Vertices[currentEdgePoints.Other]);
 
-        Vector3 tempTriCenter = (cm.Vertices[currentEdgePoints.Start] + cm.Vertices[currentEdgePoints.End] + cm.Vertices[currentEdgePoints.Other]) / 3;
-
-
-        EdgeUtils.GetMatchingEdgeOnAdjacentTriangle(cm, out edgeAdjacentToCurrent, currentEdgePoints, currentTriangleIndex);
+        Vector3 tempTriCenter = GetTriangleCenter(cm, currentEdgePoints);
+        GetMatchingEdgeOnAdjacentTriangle(cm, out edgeAdjacentToCurrent, currentEdgePoints, currentTriangleIndex);
 
         Vector3 tempGroundNormal = EdgeUtils.GetNormalFromBarycentric(cm, tempBarycentricCoordinate, edgeAdjacentToCurrent);
 
