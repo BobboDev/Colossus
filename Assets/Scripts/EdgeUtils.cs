@@ -8,6 +8,27 @@ using TMPro.EditorUtilities;
 
 public class EdgeUtils
 {
+    public static bool EdgeHasBeenRuledOut(ClimbableMesh cm, Edge currentEdge, List<Edge> unsuitableCornerEdges, List<Edge> checkedEdges)
+    {
+        // we need to use a different method for contains - checking by their positions, since hard edges has different indices
+        bool alreadyPassedThisEdge = false;
+        foreach (Edge edgeToCheck in unsuitableCornerEdges)
+        {
+            if (EdgesMatchByPosition(currentEdge, edgeToCheck, cm))
+            {
+                alreadyPassedThisEdge = true;
+            }
+        }
+        bool checkedEdgesContainsEdge = false;
+        foreach (Edge edgeToCheck in checkedEdges)
+        {
+            if (EdgesMatchByPosition(currentEdge, edgeToCheck, cm))
+            {
+                checkedEdgesContainsEdge = true;
+            }
+        }
+        return !(alreadyPassedThisEdge && !checkedEdgesContainsEdge);
+    }
     public static Vector3 GetClosestPointOnEdge(ClimbableMesh cm, EdgePoints currentEdgePoints)
     {
         Vector3 triCenter = GetTriangleCenter(cm, currentEdgePoints);

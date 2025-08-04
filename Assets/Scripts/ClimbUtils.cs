@@ -6,6 +6,20 @@ using System;
 
 public class ClimbUtils
 {
+    public static bool CornerReached(ClimbableMesh cm, EdgePoints _currentEdgePoints, out EdgePoints cornerEdgePoints, Vector3 slidePoint)
+    {
+        cornerEdgePoints = new(true);
+
+        if (slidePoint == cm.Vertices[_currentEdgePoints.Start])
+            cornerEdgePoints.Set(_currentEdgePoints.Start, 0, _currentEdgePoints.End);
+
+        if (slidePoint == cm.Vertices[_currentEdgePoints.End])
+            cornerEdgePoints.Set(_currentEdgePoints.End, 0, _currentEdgePoints.Start);
+
+        // if we reached a corner
+        bool cornerReached = cornerEdgePoints.Start != -1;
+        return cornerReached;
+    }
 
     public static Vector3 GetTurnedForwardVector(Vector3 forwardVector, Vector3 groundNormal, float turnAngle)
     {

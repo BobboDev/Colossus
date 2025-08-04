@@ -2,10 +2,6 @@ using System.Collections.Generic;
 using UnityEngine;
 using UnityEditor;
 using Overhang;
-using KinematicCharacterController;
-using System;
-using System.Linq;
-using UnityEngine.UIElements;
 
 public class ClimbShape : MonoBehaviour
 {
@@ -55,7 +51,6 @@ public class ClimbShape : MonoBehaviour
 
     public bool ForceSlide;
     public bool ForceSlideForwardProjection;
-    float _slideCoefficient = 1;
 
     public Collider DepenetrationCapsule;
 
@@ -99,15 +94,12 @@ public class ClimbShape : MonoBehaviour
             _cm.RecalculateMesh(false);
 
             // Get input
-            Vector3 tempInput;
-            tempInput = new Vector3(Input.GetAxisRaw("Horizontal"), 0, Input.GetAxisRaw("Vertical")).normalized;
+            Vector3 tempInput = new Vector3(Input.GetAxisRaw("Horizontal"), 0, Input.GetAxisRaw("Vertical")).normalized;
 
             // This is for debugging - makes the character go forwards and backwards over an edge rapidly, so I don't have to hammer the keyboard to test. 
-            if (Input.GetKeyDown(KeyCode.K))
-                _goForwardTest = !_goForwardTest;
+            _goForwardTest = Input.GetKeyDown(KeyCode.K) ? !_goForwardTest : _goForwardTest;
 
-            if (_goForwardTest)
-                tempInput = new Vector3(0, 0, 1);
+            tempInput = _goForwardTest ? new Vector3(0, 0, 1) : tempInput;
 
             // if input has magnitude then use it
             if (tempInput.magnitude > 0)
@@ -117,9 +109,8 @@ public class ClimbShape : MonoBehaviour
 
             // calculate movement on the mesh based on input
             Travel(directionInput: tempInput, depenetratePass: false, isFinalPass: false);
-            Vector3 pointOnTriangle = EdgeUtils.GetPositionFromBarycentric(_cm, _barycentricCoordinate, _currentEdgePoints);
-            transform.position = pointOnTriangle;
 
+            transform.position = EdgeUtils.GetPositionFromBarycentric(_cm, _barycentricCoordinate, _currentEdgePoints);
 
             int depenetrationIterations = 1;
             for (int i = 0; i < depenetrationIterations; i++)
@@ -128,9 +119,9 @@ public class ClimbShape : MonoBehaviour
                 Depenetrate(isFinalPass);
                 Physics.SyncTransforms();
             }
+
             // Get the new deformed position of the player based on the vertex and barycentric coordinate that was calculated in the last loop
-            pointOnTriangle = EdgeUtils.GetPositionFromBarycentric(_cm, _barycentricCoordinate, _currentEdgePoints);
-            transform.position = pointOnTriangle;
+            transform.position = EdgeUtils.GetPositionFromBarycentric(_cm, _barycentricCoordinate, _currentEdgePoints);
         }
 
     }
@@ -180,11 +171,7 @@ public class ClimbShape : MonoBehaviour
             Debug.Log("forward zero");
         }
 
-
-        // Get the direction towards the edge 
-        Vector3 triCenter = EdgeUtils.GetTriangleCenter(_cm, _currentEdgePoints);
-        Vector3 closestPointOnEdge = EdgeUtils.GetClosestPointOnEdge(_cm, _currentEdgePoints);
-
+        Vector3 currentEdgeNormal = EdgeUtils.GetEdgeNormalFromEdgePoints(_cm, _currentEdgePoints);
         if (_movementMode == MovementMode.Directional)
         {
             // This check works as intended
@@ -313,7 +300,7 @@ public class ClimbShape : MonoBehaviour
         float totalDistanceChecked = 0;
 
         // If on the edge (as of last frame) and holding away from said edge then not on edge any more
-        if (_onEdge && Vector3.Dot(_moveDirection, (closestPointOnEdge - triCenter).normalized) < 0)
+        if (_onEdge && Vector3.Dot(_moveDirection, -currentEdgeNormal) < 0)
         {
             _onEdge = false;
         }
@@ -441,18 +428,8 @@ public class ClimbShape : MonoBehaviour
                 // get the point where the character is trying to move, if it moved off the current tri into space
                 Vector3 movePositionAttempt = _newPosition + newDirection * remainingDistance;
                 Vector3 slidePoint = Mathf2.GetClosestPointOnFiniteLine(movePositionAttempt, _cm.Vertices[_currentEdgePoints.Start], _cm.Vertices[_currentEdgePoints.End]);
-                EdgePoints cornerEdgePoints = new(true);
 
-                if (slidePoint == _cm.Vertices[_currentEdgePoints.Start])
-                    cornerEdgePoints.Set(_currentEdgePoints.Start, 0, _currentEdgePoints.End);
-
-                if (slidePoint == _cm.Vertices[_currentEdgePoints.End])
-                    cornerEdgePoints.Set(_currentEdgePoints.End, 0, _currentEdgePoints.Start);
-
-                // if we reached a corner
-                bool cornerReached = cornerEdgePoints.Start != -1;
-
-                if (cornerReached)
+                if (ClimbUtils.CornerReached(_cm, _currentEdgePoints, out EdgePoints cornerEdgePoints, slidePoint))
                 {
                     totalDistanceChecked = EdgeUtils.MeasureAttemptedSlideAlongEdgeThisFrame(distance, totalDistanceChecked, _newPosition, movePositionAttempt, slidePoint);
 
@@ -468,7 +445,7 @@ public class ClimbShape : MonoBehaviour
 
                         _cornerReached = EdgeUtils.GetMatchingPointOnEdgeFromPosition(_cm, slidePoint, _currentEdgePoints);
 
-                        List<Edge> passedEdges = new List<Edge>();
+                        List<Edge> unsuitableCornerEdges = new List<Edge>();
 
                         // If the next edge attached to the corner is an outside edge
                         if (EdgeUtils.TryGetMatchingOutsideEdge(_cm, _index, _currentEdgePoints))
@@ -478,7 +455,7 @@ public class ClimbShape : MonoBehaviour
                             {
                                 if (!EdgeUtils.EdgesMatchByPosition(e, _currentEdgePoints, _cm))
                                 {
-                                    passedEdges.Add(e);
+                                    unsuitableCornerEdges.Add(e);
                                 }
                             }
                         }
@@ -494,31 +471,30 @@ public class ClimbShape : MonoBehaviour
 
                             foreach (Edge e in _cm.EdgesAttachedToCorner[_cornerReached])
                             {
-                                passedEdges.Add(e);
+                                unsuitableCornerEdges.Add(e);
                             }
 
                             if (Mathf2.GetClosestPointOnFiniteLine(movePositionAttempt, _cm.Vertices[firstCornerEdge.pointA], _cm.Vertices[firstCornerEdge.pointB]) == _cm.Vertices[_cornerReached] &&
                                 Vector3.Dot(firstCornerEdgeNormal, _moveDirection) < 0)
                             {
-                                passedEdges.Remove(firstCornerEdge);
+                                unsuitableCornerEdges.Remove(firstCornerEdge);
                                 _index = _cm.EdgeAdjacencyInfo[firstCornerEdge].triangleA;
                                 EdgeUtils.SetOrderedEdgePoints(_cm, firstCornerEdge, _cornerReached, ref _currentEdgePoints);
                             }
                             else if (Mathf2.GetClosestPointOnFiniteLine(movePositionAttempt, _cm.Vertices[secondCornerEdge.pointA], _cm.Vertices[secondCornerEdge.pointB]) == _cm.Vertices[_cornerReached])
                             {
-                                passedEdges.Remove(secondCornerEdge);
+                                unsuitableCornerEdges.Remove(secondCornerEdge);
                                 _index = _cm.EdgeAdjacencyInfo[secondCornerEdge].triangleA;
                                 EdgeUtils.SetOrderedEdgePoints(_cm, secondCornerEdge, _cornerReached, ref _currentEdgePoints);
                             }
                         }
 
-                        bool foundNextEdge = false;
                         int x = 0;
                         int tempIndex = _index;
                         int tempLastIndex = _lastIndex;
 
                         List<Edge> checkedEdges = new List<Edge>();
-                        List<Edge> checkedEdgesCorner = new List<Edge>();
+                        List<Edge> edgesCheckOnCurrentCorner = new List<Edge>();
 
                         cornerEdgePoints.Set(-1, -1, -1);
 
@@ -533,14 +509,14 @@ public class ClimbShape : MonoBehaviour
                                 bool tempEdgesContainsEdge = false;
                                 bool checkedEdgesCornerContainsEdge = false;
 
-                                foreach (Edge edgeToCheck in passedEdges)
+                                foreach (Edge edgeToCheck in unsuitableCornerEdges)
                                 {
                                     if (EdgeUtils.EdgesMatchByPosition(e, edgeToCheck, _cm))
                                     {
                                         tempEdgesContainsEdge = true;
                                     }
                                 }
-                                foreach (Edge edgeToCheck in checkedEdgesCorner)
+                                foreach (Edge edgeToCheck in edgesCheckOnCurrentCorner)
                                 {
                                     if (EdgeUtils.EdgesMatchByPosition(e, edgeToCheck, _cm))
                                     {
@@ -564,15 +540,15 @@ public class ClimbShape : MonoBehaviour
                                         {
                                             if (EdgeUtils.EdgesMatchByPosition(adjacentEdgeOnTriangle, e, _cm))
                                             {
-                                                if (!checkedEdgesCorner.Contains(adjacentEdgeOnTriangle))
+                                                if (!edgesCheckOnCurrentCorner.Contains(adjacentEdgeOnTriangle))
                                                 {
-                                                    checkedEdgesCorner.Add(adjacentEdgeOnTriangle);
+                                                    edgesCheckOnCurrentCorner.Add(adjacentEdgeOnTriangle);
                                                 }
                                             }
                                         }
-                                        if (!checkedEdgesCorner.Contains(e))
+                                        if (!edgesCheckOnCurrentCorner.Contains(e))
                                         {
-                                            checkedEdgesCorner.Add(e);
+                                            edgesCheckOnCurrentCorner.Add(e);
                                         }
                                     }
                                 }
@@ -588,6 +564,8 @@ public class ClimbShape : MonoBehaviour
                                 break;
                             }
                         }
+
+                        bool foundNextEdge = false;
                         // until we've found 
                         while (!foundNextEdge)
                         {
@@ -595,25 +573,8 @@ public class ClimbShape : MonoBehaviour
                             // scan the edges of the current triangle
                             foreach (Edge e in _cm.TriangleAdjacencyInfo[tempIndex].edges)
                             {
-                                // we need to use a different method for contains - checking by their positions, since hard edges has different indices
-                                bool alreadyPassedThisEdge = false;
-                                foreach (Edge edgeToCheck in passedEdges)
-                                {
-                                    if (EdgeUtils.EdgesMatchByPosition(e, edgeToCheck, _cm))
-                                    {
-                                        alreadyPassedThisEdge = true;
-                                    }
-                                }
-                                bool checkedEdgesContainsEdge = false;
-                                foreach (Edge edgeToCheck in checkedEdges)
-                                {
-                                    if (EdgeUtils.EdgesMatchByPosition(e, edgeToCheck, _cm))
-                                    {
-                                        checkedEdgesContainsEdge = true;
-                                    }
-                                }
                                 // if the edge is one of the edges attached to the current corner
-                                if (alreadyPassedThisEdge && !checkedEdgesContainsEdge)
+                                if (!EdgeUtils.EdgeHasBeenRuledOut(_cm, e, unsuitableCornerEdges, checkedEdges))
                                 {
                                     // and it's an outside edge
                                     if (EdgeUtils.EdgeIsOutsideEdge(e, _cm))
@@ -623,22 +584,19 @@ public class ClimbShape : MonoBehaviour
                                         _previousIndex = _index;
 
                                         _lastEdgePoints.Set(_currentEdgePoints.Start, _currentEdgePoints.End, _currentEdgePoints.Other);
-
-                                        _currentEdgePoints.Start = e.pointA;
-                                        _currentEdgePoints.End = e.pointB;
-                                        _currentEdgePoints.Other = EdgeUtils.GetOtherVertexIndex(_cm, _currentEdgePoints);
+                                        EdgeUtils.SetOrderedEdgePoints(_cm, e, e.pointA, ref _currentEdgePoints);
 
                                         _lastIndex = tempLastIndex;
                                         _index = tempIndex;
                                         _newPosition = slidePoint;
 
-                                        closestPointOnEdge = EdgeUtils.GetClosestPointOnEdge(_cm, _currentEdgePoints);
+                                        Vector3 closestPointOnEdge = EdgeUtils.GetClosestPointOnEdge(_cm, _currentEdgePoints);
                                         Vector3 previousClosestPointOnEdge = EdgeUtils.GetClosestPointOnEdge(_cm, _lastEdgePoints);
 
                                         Vector3 lastEdgeNormal = EdgeUtils.GetEdgeNormal(_cm, e);
                                         Vector3 newEdgeNormal = EdgeUtils.GetEdgeNormalFromEdgePoints(_cm, _lastEdgePoints);
 
-                                        if (Vector3.Dot((transform.rotation * _input).normalized, (closestPointOnEdge - triCenter).normalized) < 0)
+                                        if (Vector3.Dot((transform.rotation * _input).normalized, -currentEdgeNormal) < 0)
                                         {
                                             _onEdge = false;
                                             foundNextEdge = true;
@@ -776,7 +734,7 @@ public class ClimbShape : MonoBehaviour
 
         Vector3 updatedPosition = EdgeUtils.GetPositionFromBarycentric(_cm, _barycentricCoordinate, _currentEdgePoints);
 
-        triCenter = EdgeUtils.GetTriangleCenter(_cm, _currentEdgePoints);
+        Vector3 triCenter = EdgeUtils.GetTriangleCenter(_cm, _currentEdgePoints);
 
         Vector3 testPosition = EdgeUtils.GetPositionFromBarycentric(_cm, _barycentricCoordinate, _currentEdgePoints);
 
@@ -820,8 +778,6 @@ public class ClimbShape : MonoBehaviour
         {
             _forwardLastFrame = CharacterModel.forward;
         }
-
-        // Debug.DrawLine(CharacterModel.position, CharacterModel.position + CharacterModel.forward, Color.red);
     }
 
     //////////////////
