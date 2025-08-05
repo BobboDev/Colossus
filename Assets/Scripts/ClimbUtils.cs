@@ -2,10 +2,148 @@ using System.Collections;
 using System.Collections.Generic;
 using Overhang;
 using UnityEngine;
+using UnityEditor;
 using System;
 
 public class ClimbUtils
 {
+    public static void ResolveCornerTraversal(
+        ClimbableMesh cm,
+        Transform playerTransform,
+        ref int _currentTriangleIndex,
+        ref int _lastTriangleIndex,
+        ref int _backupCurrentTriangleIndex,
+        ref int _backupLastTriangleIndex,
+        ref int tempIndex,
+        ref int tempLastIndex,
+        List<Edge> edgeCandidates,
+        List<Edge> checkedEdges,
+        ref EdgePoints _currentEdgePoints,
+        ref EdgePoints _lastEdgePoints,
+        EdgePoints cornerEdgePoints,
+        ref Vector3 _newPosition,
+        ref Vector3 slidePoint,
+        ref bool _onEdge,
+        ref Vector3 _input,
+        bool _firstMoveDone,
+        int _cornerReached,
+        ref float totalDistanceChecked,
+        float distanceToMoveThisFrame,
+        MovementMode _movementMode,
+        Plane _plane,
+        Transform CharacterModel
+    )
+    {
+        int x = 0;
+
+        bool foundNextEdge = false;
+        // until we've found edge
+        while (!foundNextEdge)
+        {
+            // we need to use a different method for contains - checking by their positions, since hard edges has different indices
+            // scan the edges of the current triangle
+            foreach (Edge e in cm.TriangleAdjacencyInfo[tempIndex].edges)
+            {
+                // if the edge is one of the edges attached to the current corner
+                if (!EdgeUtils.EdgeHasBeenRuledOut(cm, e, edgeCandidates, checkedEdges))
+                {
+                    // and it's an outside edge
+                    if (EdgeUtils.EdgeIsOutsideEdge(e, cm))
+                    {
+                        foundNextEdge = true;
+                        _backupLastTriangleIndex = _lastTriangleIndex;
+                        _backupCurrentTriangleIndex = _currentTriangleIndex;
+
+                        _lastEdgePoints.Set(_currentEdgePoints.Start, _currentEdgePoints.End, _currentEdgePoints.Other);
+                        EdgeUtils.SetOrderedEdgePoints(cm, e, e.pointA, ref _currentEdgePoints);
+
+                        _lastTriangleIndex = tempLastIndex;
+                        _currentTriangleIndex = tempIndex;
+
+                        _newPosition = slidePoint;
+
+                        if (!ClimbUtils.MovingTowardsEdge(cm, playerTransform.rotation * _input, _currentEdgePoints))
+                        {
+                            _onEdge = false;
+                            foundNextEdge = true;
+                        }
+
+                        // This is for stopping the check from bouncing between edges when stuck in a corner
+                        // Problem is that it's sticking to corners when the GetClosestPointOnLine attemptedMovePosition is outside the line
+                        // In order to determine if we should be able to move round the corner, we need to know if it's a convex corner or not
+                        // DoRaysIntersect of the edge normals determines this.
+                        // If they do, then we check if the closest point on each edge to the attempted move position is equal to the corner - that's the only situation where we should move round the corner  
+                        if (
+                            EdgeUtils.CornersAreConvex(cm, _currentEdgePoints, _lastEdgePoints) &&
+                            EdgeUtils.DoesFutureMoveLandOnSameTriangle(cm, playerTransform, _newPosition, _currentEdgePoints, _currentTriangleIndex, _lastTriangleIndex, _firstMoveDone, _cornerReached, _input)
+                        )
+                        {
+                            // NOT SWITCHING TO OTHER EDGE SO OF COURSE SLIDEPOINT IS STILL AT THE CORNER
+                            _onEdge = true;
+
+                            _currentEdgePoints.Set(_lastEdgePoints.Start, _lastEdgePoints.End, _lastEdgePoints.Other);
+
+                            _currentTriangleIndex = _backupCurrentTriangleIndex;
+                            _lastTriangleIndex = _backupLastTriangleIndex;
+
+                            totalDistanceChecked = distanceToMoveThisFrame;
+                            _newPosition = slidePoint;
+                            slidePoint = cm.Vertices[_cornerReached];
+                            foundNextEdge = true;
+                        }
+
+                    }
+                    else
+                    {
+                        EdgePoints nextTriCurrentEdgePoints = new(true);
+                        // else switch to the tri on the other side of the edge
+                        tempLastIndex = tempIndex;
+
+                        tempIndex = EdgeUtils.GetOtherTriangleOnEdgeFromAdjacencyInfo(cm, e, tempIndex);
+
+                        checkedEdges.Add(e);
+                        EdgeUtils.SetOrderedEdgePointsFromTriangle(cm, e, _cornerReached, tempIndex, ref nextTriCurrentEdgePoints);
+
+                        // check if we are pointing towards the other edge (not the next edge attached to corner)
+                        // if so, we can come unstuck.
+                        // Create plane to calculate "cuts" from
+                        if (_movementMode == MovementMode.Car)
+                        {
+                            _plane = new Plane(CharacterModel.rotation * (Quaternion.Euler(0, 90, 0) * _input), cm.Vertices[_cornerReached]);
+                        }
+                        else
+                        {
+                            _plane = new Plane(CharacterModel.right, cm.Vertices[_cornerReached]);
+                        }
+                        if (EdgeUtils.GetFarEdgeCut(cm, playerTransform, _input, _cornerReached, tempIndex, _currentEdgePoints, ref nextTriCurrentEdgePoints, cornerEdgePoints, _plane, _movementMode))
+                        {
+                            _currentTriangleIndex = tempIndex;
+                            _lastTriangleIndex = tempLastIndex;
+                            _currentEdgePoints.Set(nextTriCurrentEdgePoints.Start, nextTriCurrentEdgePoints.End, nextTriCurrentEdgePoints.Other);
+                            _onEdge = false;
+                            foundNextEdge = true;
+                            totalDistanceChecked = distanceToMoveThisFrame;
+                        }
+                        else
+                        {
+
+                        }
+                    }
+                }
+            }
+
+            x++;
+            if (x > 100)
+            {
+#if UNITY_EDITOR
+                EditorApplication.isPaused = true;
+#endif
+                Debug.Log("couldn't find next edge");
+
+                return;
+            }
+        }
+    }
     public static bool MovingTowardsEdge(ClimbableMesh cm, Vector3 _moveDirection, EdgePoints edgePoints)
     {
         Vector3 currentEdgeNormal = EdgeUtils.GetEdgeNormalFromEdgePoints(cm, edgePoints);

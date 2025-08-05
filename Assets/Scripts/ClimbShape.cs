@@ -227,7 +227,7 @@ public class ClimbShape : MonoBehaviour
 
         bool depenetrate = false;
         bool slide = false;
-        float distance = directionInput.magnitude * _targetSpeed * Time.deltaTime;
+        float distanceToMoveThisFrame = directionInput.magnitude * _targetSpeed * Time.deltaTime;
 
         if (depenetratePass)
         {
@@ -251,6 +251,8 @@ public class ClimbShape : MonoBehaviour
                 // Don't need to average this! Additive is better.
                 Plane wallPlane = new();
                 Vector3 wallNormal = depenetrationDirection.normalized;
+
+                // 60 degree slope limit to depenetration
                 if (Vector3.Dot(transform.up, wallNormal) > 0.5f)
                 {
                     _moveDirection = Vector3.zero;
@@ -260,15 +262,13 @@ public class ClimbShape : MonoBehaviour
                 }
                 else
                 {
-                    Debug.Log("DEPENETRATE");
-
                     wallPlane.SetNormalAndPosition(wallNormal, depenetrationDirection * depenetrationDistance);
 
                     Ray depenetrateRay = new Ray();
                     depenetrateRay.direction = totalDepenetrationDirection.normalized;
                     depenetrateRay.origin = Vector3.zero;
-                    wallPlane.Raycast(depenetrateRay, out distance);
-                    distance *= 1f;
+                    wallPlane.Raycast(depenetrateRay, out distanceToMoveThisFrame);
+                    distanceToMoveThisFrame *= 1f;
 
                     forwardFromRecordedBarycentric = totalDepenetrationDirection.normalized;
 
@@ -289,10 +289,7 @@ public class ClimbShape : MonoBehaviour
                 _plane = new Plane(Mathf2.RotateAroundAxis(forwardFromRecordedBarycentric, transform.up, 90), transform.position);
             }
         }
-        else
-        {
 
-        }
         if (!depenetrate && !slide)
         {
             // Create plane to calculate "cuts" from
@@ -339,9 +336,9 @@ public class ClimbShape : MonoBehaviour
         // newPosition is updated as we walk through the mesh
         _newPosition = Vector3.zero;
         // if we didn't reach the next edge with this movement, calculate the new position in the current triangle
-        if (totalDistanceChecked >= distance)
+        if (totalDistanceChecked >= distanceToMoveThisFrame)
         {
-            _newPosition = transform.position + Vector3.ClampMagnitude(_cut - transform.position, distance);
+            _newPosition = transform.position + Vector3.ClampMagnitude(_cut - transform.position, distanceToMoveThisFrame);
         }
         else // else make the next check go from the point on the next edge
         {
@@ -349,16 +346,18 @@ public class ClimbShape : MonoBehaviour
         }
 
 
-        float remainingDistance = distance - Vector3.Distance(transform.position, _newPosition);
+        float remainingDistance = distanceToMoveThisFrame - Vector3.Distance(transform.position, _newPosition);
         _castDirectionTest = transform.forward;
 
         // Why do we need lastIndex, previousLastIndex and previousIndex?
 
         int _backupLastTriangleIndex = _currentTriangleIndex;
+        int _backupCurrentTriangleIndex = _lastTriangleIndex;
+
         _lastEdgePoints.Set(_currentEdgePoints.Start, _currentEdgePoints.End, _currentEdgePoints.Other);
 
-        // while we have checked less distance than the edge
-        while (totalDistanceChecked < distance)
+        // while we have checked less distance than the 
+        while (totalDistanceChecked < distanceToMoveThisFrame)
         {
             // if not on edge / just started moving away from edge
             if (!_onEdge)
@@ -383,7 +382,7 @@ public class ClimbShape : MonoBehaviour
 
                     Vector3 oldPosition = _newPosition;
 
-                    if (totalDistanceChecked >= distance)
+                    if (totalDistanceChecked >= distanceToMoveThisFrame)
                     {
                         _newPosition = _newPosition + Vector3.ClampMagnitude(_cut - _newPosition, remainingDistance);
                     }
@@ -410,7 +409,7 @@ public class ClimbShape : MonoBehaviour
                     {
                         _currentEdgePoints.Set(_lastEdgePoints.Start, _lastEdgePoints.End, _lastEdgePoints.Other);
                         _currentTriangleIndex = _backupLastTriangleIndex;
-                        totalDistanceChecked = distance;
+                        totalDistanceChecked = distanceToMoveThisFrame;
 #if UNITY_EDITOR
                         EditorApplication.isPaused = true;
 #endif
@@ -441,7 +440,7 @@ public class ClimbShape : MonoBehaviour
 
                 if (ClimbUtils.CornerReached(_cm, _currentEdgePoints, out EdgePoints cornerEdgePoints, slidePoint))
                 {
-                    totalDistanceChecked = EdgeUtils.MeasureAttemptedSlideAlongEdgeThisFrame(distance, totalDistanceChecked, _newPosition, movePositionAttempt, slidePoint);
+                    totalDistanceChecked = EdgeUtils.MeasureAttemptedSlideAlongEdgeThisFrame(distanceToMoveThisFrame, totalDistanceChecked, _newPosition, movePositionAttempt, slidePoint);
 
                     // If the next edge is another outside edge on the same triangle, switch to that. 
                     if (EdgeUtils.NextEdgeIsOnThisTriangle(_cm, out var nextEdgeOnThisTriangle, _currentEdgePoints, cornerEdgePoints.Start))
@@ -514,135 +513,14 @@ public class ClimbShape : MonoBehaviour
                         {
                             EdgeUtils.SetOrderedEdgePointsFromTriangle(_cm, foundEdge, _cornerReached, _currentTriangleIndex, ref cornerEdgePoints);
                         }
-                        else
-                        {
-                            // // Optional fallback if needed
-                            // Edge altEdge = EdgeUtils.FindNextOutsideEdgeFromCorner(_cm, _cornerReached, _currentTriangleIndex);
-                            // if (EdgeUtils.EdgeIsOutsideEdge(altEdge, _cm))
-                            // {
-                            //     EdgeUtils.SetOrderedEdgePointsFromTriangle(_cm, altEdge, _cornerReached, _currentTriangleIndex, ref cornerEdgePoints);
-                            // }
-                            // else
-                            // {
-                            Debug.LogWarning("Couldn't find valid outside edge at corner");
-                            // }
-                        }
 
-                        bool foundNextEdge = false;
-                        // until we've found edge
-                        while (!foundNextEdge)
-                        {
-                            // we need to use a different method for contains - checking by their positions, since hard edges has different indices
-                            // scan the edges of the current triangle
-                            foreach (Edge e in _cm.TriangleAdjacencyInfo[tempIndex].edges)
-                            {
-                                // if the edge is one of the edges attached to the current corner
-                                if (!EdgeUtils.EdgeHasBeenRuledOut(_cm, e, edgeCandidates, checkedEdges))
-                                {
-                                    // and it's an outside edge
-                                    if (EdgeUtils.EdgeIsOutsideEdge(e, _cm))
-                                    {
-                                        foundNextEdge = true;
-                                        _backupLastTriangleIndex = _lastTriangleIndex;
-                                        int _backupCurrentTriangleIndex = _currentTriangleIndex;
-
-                                        _lastEdgePoints.Set(_currentEdgePoints.Start, _currentEdgePoints.End, _currentEdgePoints.Other);
-                                        EdgeUtils.SetOrderedEdgePoints(_cm, e, e.pointA, ref _currentEdgePoints);
-
-                                        _lastTriangleIndex = tempLastIndex;
-                                        _currentTriangleIndex = tempIndex;
-
-                                        _newPosition = slidePoint;
-
-                                        if (!ClimbUtils.MovingTowardsEdge(_cm, transform.rotation * _input, _currentEdgePoints))
-                                        {
-                                            _onEdge = false;
-                                            foundNextEdge = true;
-                                        }
-
-                                        // This is for stopping the check from bouncing between edges when stuck in a corner
-                                        // Problem is that it's sticking to corners when the GetClosestPointOnLine attemptedMovePosition is outside the line
-                                        // In order to determine if we should be able to move round the corner, we need to know if it's a convex corner or not
-                                        // DoRaysIntersect of the edge normals determines this.
-                                        // If they do, then we check if the closest point on each edge to the attempted move position is equal to the corner - that's the only situation where we should move round the corner  
-                                        if (
-                                            EdgeUtils.CornersAreConvex(_cm, _currentEdgePoints, _lastEdgePoints) &&
-                                            EdgeUtils.DoesFutureMoveLandOnSameTriangle(_cm, transform, _newPosition, _currentEdgePoints, _currentTriangleIndex, _lastTriangleIndex, _firstMoveDone, _cornerReached, _input)
-                                        )
-                                        {
-                                            // NOT SWITCHING TO OTHER EDGE SO OF COURSE SLIDEPOINT IS STILL AT THE CORNER
-                                            _onEdge = true;
-
-                                            _currentEdgePoints.Set(_lastEdgePoints.Start, _lastEdgePoints.End, _lastEdgePoints.Other);
-
-                                            _currentTriangleIndex = _backupCurrentTriangleIndex;
-                                            _lastTriangleIndex = _backupLastTriangleIndex;
-
-                                            totalDistanceChecked = distance;
-                                            _newPosition = slidePoint;
-                                            slidePoint = _cm.Vertices[_cornerReached];
-                                            foundNextEdge = true;
-                                        }
-
-                                    }
-                                    else
-                                    {
-                                        EdgePoints nextTriCurrentEdgePoints = new(true);
-                                        // else switch to the tri on the other side of the edge
-                                        tempLastIndex = tempIndex;
-
-                                        tempIndex = EdgeUtils.GetOtherTriangleOnEdgeFromAdjacencyInfo(_cm, e, tempIndex);
-
-                                        checkedEdges.Add(e);
-                                        EdgeUtils.SetOrderedEdgePointsFromTriangle(_cm, e, _cornerReached, tempIndex, ref nextTriCurrentEdgePoints);
-
-                                        // check if we are pointing towards the other edge (not the next edge attached to corner)
-                                        // if so, we can come unstuck.
-                                        // Create plane to calculate "cuts" from
-                                        if (_movementMode == MovementMode.Car)
-                                        {
-                                            _plane = new Plane(CharacterModel.rotation * (Quaternion.Euler(0, 90, 0) * _input), _cm.Vertices[_cornerReached]);
-                                        }
-                                        else
-                                        {
-                                            _plane = new Plane(CharacterModel.right, _cm.Vertices[_cornerReached]);
-                                        }
-                                        if (EdgeUtils.GetFarEdgeCut(_cm, transform, _input, _cornerReached, tempIndex, _currentEdgePoints, ref nextTriCurrentEdgePoints, cornerEdgePoints, _plane, _movementMode))
-                                        {
-                                            _currentTriangleIndex = tempIndex;
-                                            _lastTriangleIndex = tempLastIndex;
-                                            _currentEdgePoints.Set(nextTriCurrentEdgePoints.Start, nextTriCurrentEdgePoints.End, nextTriCurrentEdgePoints.Other);
-                                            _onEdge = false;
-                                            foundNextEdge = true;
-                                            totalDistanceChecked = distance;
-                                        }
-                                        else
-                                        {
-
-                                        }
-                                    }
-                                }
-                            }
-
-                            x++;
-                            if (x > 100)
-                            {
-#if UNITY_EDITOR
-                                EditorApplication.isPaused = true;
-#endif
-                                Debug.Log("couldn't find next edge");
-
-                                return;
-                            }
-                        }
-
-
+                        ClimbUtils.ResolveCornerTraversal(_cm, transform, ref _currentTriangleIndex, ref _lastTriangleIndex, ref _backupCurrentTriangleIndex, ref _backupLastTriangleIndex, ref tempIndex, ref tempLastIndex, edgeCandidates, checkedEdges, ref _currentEdgePoints, ref _lastEdgePoints, cornerEdgePoints, ref _newPosition, ref slidePoint, ref _onEdge, ref _input, _firstMoveDone, _cornerReached, ref totalDistanceChecked, distanceToMoveThisFrame, _movementMode, _plane, CharacterModel);
                     }
                     _newPosition = slidePoint;
                 }
                 else
                 {
-                    totalDistanceChecked = distance;
+                    totalDistanceChecked = distanceToMoveThisFrame;
                     _newPosition = slidePoint;
                 }
 
