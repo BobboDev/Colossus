@@ -106,16 +106,7 @@ public class ClimbUtils
 
                         // check if we are pointing towards the other edge (not the next edge attached to corner)
                         // if so, we can come unstuck.
-                        // Create plane to calculate "cuts" from
-                        if (_movementMode == MovementMode.Car)
-                        {
-                            _plane = new Plane(CharacterModel.rotation * (Quaternion.Euler(0, 90, 0) * _input), cm.Vertices[_cornerReached]);
-                        }
-                        else
-                        {
-                            _plane = new Plane(CharacterModel.right, cm.Vertices[_cornerReached]);
-                        }
-                        if (EdgeUtils.GetFarEdgeCut(cm, playerTransform, _input, _cornerReached, tempIndex, _currentEdgePoints, ref nextTriCurrentEdgePoints, cornerEdgePoints, _plane, _movementMode))
+                        if (EdgeUtils.GetFarEdgeCut(cm, playerTransform, CharacterModel, _input, _cornerReached, tempIndex, ref nextTriCurrentEdgePoints, cornerEdgePoints, _movementMode))
                         {
                             _currentTriangleIndex = tempIndex;
                             _lastTriangleIndex = tempLastIndex;

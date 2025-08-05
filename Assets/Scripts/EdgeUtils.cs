@@ -476,8 +476,9 @@ public class EdgeUtils
     public static Ray CreateRay(Vector3 point1, Vector3 point2) => new Ray { origin = point1, direction = (point2 - point1).normalized };
     public static Ray CreateRayFromDirection(Vector3 origin, Vector3 direction) => new Ray { origin = origin, direction = direction };
 
-    public static bool GetFarEdgeCut(ClimbableMesh cm, Transform playerTransform, Vector3 input, int currentCornerInt, int triangleIndex, EdgePoints currentEdgePoints, ref EdgePoints nextTriCurrentEdgePoints, EdgePoints cornerEdgePoints, Plane plane, MovementMode movementMode)
+    public static bool GetFarEdgeCut(ClimbableMesh cm, Transform playerTransform, Transform CharacterModel, Vector3 input, int currentCornerInt, int triangleIndex, ref EdgePoints nextTriCurrentEdgePoints, EdgePoints cornerEdgePoints, MovementMode movementMode)
     {
+        Plane plane = movementMode == MovementMode.Car ? new Plane(CharacterModel.rotation * (Quaternion.Euler(0, 90, 0) * input), cm.Vertices[currentCornerInt]) : new Plane(CharacterModel.right, cm.Vertices[currentCornerInt]);
         Vector3 triCenter = GetTriangleCenter(cm, cornerEdgePoints);
         Vector3 closestPointOnEdge = Mathf2.NearestPointOnLine(cm.Vertices[cornerEdgePoints.Start], (cm.Vertices[cornerEdgePoints.Start] - cm.Vertices[cornerEdgePoints.End]).normalized, triCenter);
         Vector3 nextTriCenter = GetTriangleCenter(cm, nextTriCurrentEdgePoints);
