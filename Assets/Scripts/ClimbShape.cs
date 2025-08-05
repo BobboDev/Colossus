@@ -443,7 +443,7 @@ public class ClimbShape : MonoBehaviour
 
                         _cornerReached = EdgeUtils.GetMatchingPointOnEdgeFromPosition(_cm, slidePoint, _currentEdgePoints);
 
-                        List<Edge> unsuitableCornerEdges = new List<Edge>();
+                        List<Edge> edgeCandidates = new List<Edge>();
 
                         // If the next edge attached to the corner is an outside edge
                         if (EdgeUtils.TryGetMatchingOutsideEdge(_cm, _currentTriangleIndex, _currentEdgePoints))
@@ -453,13 +453,13 @@ public class ClimbShape : MonoBehaviour
                             {
                                 if (!EdgeUtils.EdgesMatchByPosition(e, _currentEdgePoints, _cm))
                                 {
-                                    unsuitableCornerEdges.Add(e);
+                                    edgeCandidates.Add(e);
                                 }
                             }
                         }
                         else
                         {
-                            // Didn't find outside edge, we're still sliding. If movepositionattempt doesn't land us somewhere in the middle of this edge or the next outside edge, switch to the triangle 
+                            // Didn't find outside edge, we're still sliding. If movepositionattempt doesn't land us somewhere in the middle of this edge or the next outside edge, we're stuck in a corner
                             Edge firstCornerEdge = EdgeUtils.FindFirstEdgeOnCorner(_cornerReached, _currentTriangleIndex, _cm);
                             Edge secondCornerEdge = EdgeUtils.FindNextOutsideEdgeFromCorner(_cm, _cornerReached, _currentTriangleIndex);
 
@@ -467,19 +467,19 @@ public class ClimbShape : MonoBehaviour
 
                             foreach (Edge e in _cm.EdgesAttachedToCorner[_cornerReached])
                             {
-                                unsuitableCornerEdges.Add(e);
+                                edgeCandidates.Add(e);
                             }
 
                             if (Mathf2.GetClosestPointOnFiniteLine(movePositionAttempt, _cm.Vertices[firstCornerEdge.pointA], _cm.Vertices[firstCornerEdge.pointB]) == _cm.Vertices[_cornerReached] &&
                                ClimbUtils.MovingTowardsEdge(_cm, _moveDirection, firstCornerEdge))
                             {
-                                unsuitableCornerEdges.Remove(firstCornerEdge);
+                                edgeCandidates.Remove(firstCornerEdge);
                                 _currentTriangleIndex = _cm.EdgeAdjacencyInfo[firstCornerEdge].triangleA;
                                 EdgeUtils.SetOrderedEdgePoints(_cm, firstCornerEdge, _cornerReached, ref _currentEdgePoints);
                             }
                             else if (Mathf2.GetClosestPointOnFiniteLine(movePositionAttempt, _cm.Vertices[secondCornerEdge.pointA], _cm.Vertices[secondCornerEdge.pointB]) == _cm.Vertices[_cornerReached])
                             {
-                                unsuitableCornerEdges.Remove(secondCornerEdge);
+                                edgeCandidates.Remove(secondCornerEdge);
                                 _currentTriangleIndex = _cm.EdgeAdjacencyInfo[secondCornerEdge].triangleA;
                                 EdgeUtils.SetOrderedEdgePoints(_cm, secondCornerEdge, _cornerReached, ref _currentEdgePoints);
                             }
@@ -490,79 +490,34 @@ public class ClimbShape : MonoBehaviour
                         int tempLastIndex = _lastTriangleIndex;
 
                         List<Edge> checkedEdges = new List<Edge>();
-                        List<Edge> edgesCheckOnCurrentCorner = new List<Edge>();
+                        List<Edge> edgesCheckedOnCurrentCorner = new List<Edge>();
 
                         cornerEdgePoints.Set(-1, -1, -1);
 
                         int cornerTriangleIndex = tempIndex;
 
-                        // until we've found an outer edge
-                        while (cornerEdgePoints.Start == -1)
+                        Edge foundEdge = EdgeUtils.FindFirstEdgeOnCorner(_cornerReached, _currentTriangleIndex, _cm);
+
+                        if (EdgeUtils.EdgeIsOutsideEdge(foundEdge, _cm))
                         {
-                            foreach (Edge e in _cm.TriangleAdjacencyInfo[cornerTriangleIndex].edges)
-                            {
-                                // We need to find the other corner edge
-                                bool tempEdgesContainsEdge = false;
-                                bool checkedEdgesCornerContainsEdge = false;
-
-                                foreach (Edge edgeToCheck in unsuitableCornerEdges)
-                                {
-                                    if (EdgeUtils.EdgesMatchByPosition(e, edgeToCheck, _cm))
-                                    {
-                                        tempEdgesContainsEdge = true;
-                                    }
-                                }
-                                foreach (Edge edgeToCheck in edgesCheckOnCurrentCorner)
-                                {
-                                    if (EdgeUtils.EdgesMatchByPosition(e, edgeToCheck, _cm))
-                                    {
-                                        checkedEdgesCornerContainsEdge = true;
-                                    }
-                                }
-                                // if the edge is one of the edges attached to the current corner
-                                if (tempEdgesContainsEdge && !checkedEdgesCornerContainsEdge)
-                                {
-                                    // and it's an outside edge
-                                    if (EdgeUtils.EdgeIsOutsideEdge(e, _cm))
-                                    {
-                                        EdgeUtils.SetOrderedEdgePointsFromTriangle(_cm, e, _cornerReached, cornerTriangleIndex, ref cornerEdgePoints);
-                                    }
-                                    else
-                                    {
-                                        // else switch to the tri on the other side of the edge
-                                        cornerTriangleIndex = EdgeUtils.GetMatchingTriangleOnEdge(_cm, cornerTriangleIndex, e);
-
-                                        foreach (Edge adjacentEdgeOnTriangle in _cm.TriangleAdjacencyInfo[cornerTriangleIndex].edges)
-                                        {
-                                            if (EdgeUtils.EdgesMatchByPosition(adjacentEdgeOnTriangle, e, _cm))
-                                            {
-                                                if (!edgesCheckOnCurrentCorner.Contains(adjacentEdgeOnTriangle))
-                                                {
-                                                    edgesCheckOnCurrentCorner.Add(adjacentEdgeOnTriangle);
-                                                }
-                                            }
-                                        }
-                                        if (!edgesCheckOnCurrentCorner.Contains(e))
-                                        {
-                                            edgesCheckOnCurrentCorner.Add(e);
-                                        }
-                                    }
-                                }
-                            }
-
-                            timesLooped++;
-                            if (timesLooped > 100)
-                            {
-#if UNITY_EDITOR
-                                EditorApplication.isPaused = true;
-#endif
-                                Debug.Log("Couldn't find corner's end edge");
-                                break;
-                            }
+                            EdgeUtils.SetOrderedEdgePointsFromTriangle(_cm, foundEdge, _cornerReached, _currentTriangleIndex, ref cornerEdgePoints);
+                        }
+                        else
+                        {
+                            // // Optional fallback if needed
+                            // Edge altEdge = EdgeUtils.FindNextOutsideEdgeFromCorner(_cm, _cornerReached, _currentTriangleIndex);
+                            // if (EdgeUtils.EdgeIsOutsideEdge(altEdge, _cm))
+                            // {
+                            //     EdgeUtils.SetOrderedEdgePointsFromTriangle(_cm, altEdge, _cornerReached, _currentTriangleIndex, ref cornerEdgePoints);
+                            // }
+                            // else
+                            // {
+                            Debug.LogWarning("Couldn't find valid outside edge at corner");
+                            // }
                         }
 
                         bool foundNextEdge = false;
-                        // until we've found 
+                        // until we've found edge
                         while (!foundNextEdge)
                         {
                             // we need to use a different method for contains - checking by their positions, since hard edges has different indices
@@ -570,7 +525,7 @@ public class ClimbShape : MonoBehaviour
                             foreach (Edge e in _cm.TriangleAdjacencyInfo[tempIndex].edges)
                             {
                                 // if the edge is one of the edges attached to the current corner
-                                if (!EdgeUtils.EdgeHasBeenRuledOut(_cm, e, unsuitableCornerEdges, checkedEdges))
+                                if (!EdgeUtils.EdgeHasBeenRuledOut(_cm, e, edgeCandidates, checkedEdges))
                                 {
                                     // and it's an outside edge
                                     if (EdgeUtils.EdgeIsOutsideEdge(e, _cm))
