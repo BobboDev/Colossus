@@ -612,8 +612,8 @@ public class ClimbShape : MonoBehaviour
 
                                             _currentEdgePoints.Set(_lastEdgePoints.Start, _lastEdgePoints.End, _lastEdgePoints.Other);
 
-                                            int _currentTriangleIndex = _backupCurrentTriangleIndex;
-                                            int _lastTriangleIndex = _backupLastTriangleIndex;
+                                            _currentTriangleIndex = _backupCurrentTriangleIndex;
+                                            _lastTriangleIndex = _backupLastTriangleIndex;
 
                                             totalDistanceChecked = distance;
                                             _newPosition = slidePoint;
