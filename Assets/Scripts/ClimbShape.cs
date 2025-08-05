@@ -252,32 +252,21 @@ public class ClimbShape : MonoBehaviour
                 Plane wallPlane = new();
                 Vector3 wallNormal = depenetrationDirection.normalized;
 
-                // 60 degree slope limit to depenetration
-                if (Vector3.Dot(transform.up, wallNormal) > 0.5f)
-                {
-                    _moveDirection = Vector3.zero;
-                    newDirection = Vector3.zero;
-                    _input = Vector3.zero;
-                    _plane = new Plane(Mathf2.RotateAroundAxis(Vector3.zero, transform.up, 90), transform.position);
-                }
-                else
-                {
-                    wallPlane.SetNormalAndPosition(wallNormal, depenetrationDirection * depenetrationDistance);
+                wallPlane.SetNormalAndPosition(wallNormal, depenetrationDirection * depenetrationDistance);
 
-                    Ray depenetrateRay = new Ray();
-                    depenetrateRay.direction = totalDepenetrationDirection.normalized;
-                    depenetrateRay.origin = Vector3.zero;
-                    wallPlane.Raycast(depenetrateRay, out distanceToMoveThisFrame);
-                    distanceToMoveThisFrame *= 1f;
+                Ray depenetrateRay = new Ray();
+                depenetrateRay.direction = totalDepenetrationDirection.normalized;
+                depenetrateRay.origin = Vector3.zero;
+                wallPlane.Raycast(depenetrateRay, out distanceToMoveThisFrame);
+                distanceToMoveThisFrame *= 1f;
 
-                    forwardFromRecordedBarycentric = totalDepenetrationDirection.normalized;
+                forwardFromRecordedBarycentric = totalDepenetrationDirection.normalized;
 
-                    _moveDirection = forwardFromRecordedBarycentric;
-                    newDirection = forwardFromRecordedBarycentric;
-                    _input = forwardFromRecordedBarycentric;
-                    depenetrate = true;
-                    _plane = new Plane(Mathf2.RotateAroundAxis(forwardFromRecordedBarycentric, transform.up, 90), transform.position);
-                }
+                _moveDirection = forwardFromRecordedBarycentric;
+                newDirection = forwardFromRecordedBarycentric;
+                _input = forwardFromRecordedBarycentric;
+                depenetrate = true;
+                _plane = new Plane(Mathf2.RotateAroundAxis(forwardFromRecordedBarycentric, transform.up, 90), transform.position);
             }
             else
             {
@@ -424,14 +413,13 @@ public class ClimbShape : MonoBehaviour
                 //   !!                  !!   //
                 //   !!  START REFACTOR  !!   //
                 //   !!                  !!   //
-                //   !! 510 to 458 LINES !!   //
+                //   !!  510 to 63 LINES !!   //
                 //   !!                  !!   //
                 //   !!  START REFACTOR  !!   //
                 //   !!                  !!   //
                 //   !!!!!!!!!!!!!!!!!!!!!!   //
                 //                            //
                 ////////////////////////////////
-
 
                 // get the point where the character is trying to move, if it moved off the current tri into space
                 Vector3 movePositionAttempt = _newPosition + newDirection * remainingDistance;
@@ -476,7 +464,6 @@ public class ClimbShape : MonoBehaviour
                 }
 
                 remainingDistance = remainingDistance - Vector3.Distance(_newPosition, slidePoint);
-
                 _plane = new Plane(transform.rotation * Quaternion.Euler(0, 90, 0) * _input, _newPosition);
 
                 if (++i > 1000)
@@ -489,14 +476,13 @@ public class ClimbShape : MonoBehaviour
             }
         }
 
-
         ////////////////////////////////
         //                            //
         //   !!!!!!!!!!!!!!!!!!!!!!   //
         //   !!                  !!   //
         //   !!   END REFACTOR   !!   //
         //   !!                  !!   //
-        //   !! 510 to 458 LINES !!   //
+        //   !!  510 to 63 LINES !!   //
         //   !!                  !!   //
         //   !!   END REFACTOR   !!   //
         //   !!                  !!   //
@@ -509,17 +495,11 @@ public class ClimbShape : MonoBehaviour
 
         _barycentricCoordinate = Mathf2.GetBarycentricCoordinates(_newPosition, _cm.Vertices[_currentEdgePoints.Start], _cm.Vertices[_currentEdgePoints.End], _cm.Vertices[_currentEdgePoints.Other]);
 
-        Vector3 updatedPosition = EdgeUtils.GetPositionFromBarycentric(_cm, _barycentricCoordinate, _currentEdgePoints);
-
         Vector3 triCenter = EdgeUtils.GetTriangleCenter(_cm, _currentEdgePoints);
-
-        Vector3 testPosition = EdgeUtils.GetPositionFromBarycentric(_cm, _barycentricCoordinate, _currentEdgePoints);
 
         ClimbUtils.GetGroundNormal(_cm, out groundNormal, _barycentricCoordinate, _currentEdgePoints, _currentTriangleIndex);
 
         _castDirectionTest = Quaternion.FromToRotation(transform.up, groundNormal) * transform.forward;
-
-        Vector3 v = Vector3.Cross(_castDirectionTest, groundNormal).normalized;
 
         if (_movementMode == MovementMode.Car)
         {
@@ -537,6 +517,7 @@ public class ClimbShape : MonoBehaviour
                 _testPlane = new Plane(-CharacterModel.right, triCenter);
             }
         }
+
         _testCut = Vector3.zero;
         _testCut = EdgeUtils.FindTrianglePlaneIntersection(_cm, ref _currentEdgePoints, _currentEdgePoints, _currentTriangleIndex, _lastTriangleIndex, ref _firstMoveDone, _castDirectionTest, triCenter, _testPlane, CutType.Test);
 
@@ -544,8 +525,6 @@ public class ClimbShape : MonoBehaviour
         _lastBarycentricCoordinate = Mathf2.GetBarycentricCoordinates(_testCut, _cm.Vertices[_currentEdgePoints.Start], _cm.Vertices[_currentEdgePoints.End], _cm.Vertices[_currentEdgePoints.Other]);
         _testCut = EdgeUtils.FindTrianglePlaneIntersection(_cm, ref _currentEdgePoints, _currentEdgePoints, _currentTriangleIndex, _lastTriangleIndex, ref _firstMoveDone, -_castDirectionTest, triCenter, _testPlane, CutType.Test);
         _barycentricCoordinateBehind = Mathf2.GetBarycentricCoordinates(_testCut, _cm.Vertices[_currentEdgePoints.Start], _cm.Vertices[_currentEdgePoints.End], _cm.Vertices[_currentEdgePoints.Other]);
-        //    Debug.DrawLine(transform.position, transform.position + plane.normal, Color.blue);
-
 
         if (forwardFromRecordedBarycentric != Vector3.zero)
         {
@@ -556,11 +535,6 @@ public class ClimbShape : MonoBehaviour
             _forwardLastFrame = CharacterModel.forward;
         }
     }
-
-    //////////////////
-    // REFACTOR END //
-    //////////////////
-    ///
 
     void OnGUI()
     {
