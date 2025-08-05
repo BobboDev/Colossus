@@ -9,12 +9,12 @@ public class ClimbUtils
     public static bool MovingTowardsEdge(ClimbableMesh cm, Vector3 _moveDirection, EdgePoints edgePoints)
     {
         Vector3 currentEdgeNormal = EdgeUtils.GetEdgeNormalFromEdgePoints(cm, edgePoints);
-        return Vector3.Dot(_moveDirection, currentEdgeNormal) < 0;
+        return Vector3.Dot(_moveDirection, currentEdgeNormal) <= 0;
     }
     public static bool MovingTowardsEdge(ClimbableMesh cm, Vector3 _moveDirection, Edge edge)
     {
         Vector3 currentEdgeNormal = EdgeUtils.GetEdgeNormal(cm, edge);
-        return Vector3.Dot(_moveDirection, currentEdgeNormal) < 0;
+        return Vector3.Dot(_moveDirection, currentEdgeNormal) <= 0;
     }
     public static bool CornerReached(ClimbableMesh cm, EdgePoints _currentEdgePoints, out EdgePoints cornerEdgePoints, Vector3 slidePoint)
     {

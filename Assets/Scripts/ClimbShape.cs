@@ -251,21 +251,33 @@ public class ClimbShape : MonoBehaviour
                 // Don't need to average this! Additive is better.
                 Plane wallPlane = new();
                 Vector3 wallNormal = depenetrationDirection.normalized;
-                wallPlane.SetNormalAndPosition(wallNormal, depenetrationDirection * depenetrationDistance);
+                if (Vector3.Dot(transform.up, wallNormal) > 0.5f)
+                {
+                    _moveDirection = Vector3.zero;
+                    newDirection = Vector3.zero;
+                    _input = Vector3.zero;
+                    _plane = new Plane(Mathf2.RotateAroundAxis(Vector3.zero, transform.up, 90), transform.position);
+                }
+                else
+                {
+                    Debug.Log("DEPENETRATE");
 
-                Ray depenetrateRay = new Ray();
-                depenetrateRay.direction = totalDepenetrationDirection.normalized;
-                depenetrateRay.origin = Vector3.zero;
-                wallPlane.Raycast(depenetrateRay, out distance);
-                distance *= 1f;
+                    wallPlane.SetNormalAndPosition(wallNormal, depenetrationDirection * depenetrationDistance);
 
-                forwardFromRecordedBarycentric = totalDepenetrationDirection.normalized;
+                    Ray depenetrateRay = new Ray();
+                    depenetrateRay.direction = totalDepenetrationDirection.normalized;
+                    depenetrateRay.origin = Vector3.zero;
+                    wallPlane.Raycast(depenetrateRay, out distance);
+                    distance *= 1f;
 
-                _moveDirection = forwardFromRecordedBarycentric;
-                newDirection = forwardFromRecordedBarycentric;
-                _input = forwardFromRecordedBarycentric;
-                depenetrate = true;
-                _plane = new Plane(Mathf2.RotateAroundAxis(forwardFromRecordedBarycentric, transform.up, 90), transform.position);
+                    forwardFromRecordedBarycentric = totalDepenetrationDirection.normalized;
+
+                    _moveDirection = forwardFromRecordedBarycentric;
+                    newDirection = forwardFromRecordedBarycentric;
+                    _input = forwardFromRecordedBarycentric;
+                    depenetrate = true;
+                    _plane = new Plane(Mathf2.RotateAroundAxis(forwardFromRecordedBarycentric, transform.up, 90), transform.position);
+                }
             }
             else
             {
