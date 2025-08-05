@@ -171,7 +171,6 @@ public class ClimbShape : MonoBehaviour
             Debug.Log("forward zero");
         }
 
-        Vector3 currentEdgeNormal = EdgeUtils.GetEdgeNormalFromEdgePoints(_cm, _currentEdgePoints);
         if (_movementMode == MovementMode.Directional)
         {
             // This check works as intended
@@ -300,7 +299,7 @@ public class ClimbShape : MonoBehaviour
         float totalDistanceChecked = 0;
 
         // If on the edge (as of last frame) and holding away from said edge then not on edge any more
-        if (_onEdge && Vector3.Dot(_moveDirection, -currentEdgeNormal) < 0)
+        if (!ClimbUtils.MovingTowardsEdge(_cm, _moveDirection, _currentEdgePoints))
         {
             _onEdge = false;
         }
@@ -356,7 +355,6 @@ public class ClimbShape : MonoBehaviour
                 _lastTriangleIndex = _currentTriangleIndex;
 
                 // take the edge we just passed, then get the tri that we didn't just check
-                // don't worry, index is set inGetNextTri() 
                 int[] nextTriIndices = EdgeUtils.GetNextTri(_cm, ref _currentTriangleIndex, _currentEdgePoints);
                 EdgePoints nextTri = new();
                 nextTri.Set(nextTriIndices[0], nextTriIndices[1], nextTriIndices[2]);
@@ -465,9 +463,6 @@ public class ClimbShape : MonoBehaviour
                             Edge firstCornerEdge = EdgeUtils.FindFirstEdgeOnCorner(_cornerReached, _currentTriangleIndex, _cm);
                             Edge secondCornerEdge = EdgeUtils.FindNextOutsideEdgeFromCorner(_cm, _cornerReached, _currentTriangleIndex);
 
-                            Vector3 firstCornerEdgeNormal = EdgeUtils.GetEdgeNormal(_cm, firstCornerEdge);
-                            Vector3 secondCornerEdgeNormal = EdgeUtils.GetEdgeNormal(_cm, secondCornerEdge);
-
                             timesLooped = 0;
 
                             foreach (Edge e in _cm.EdgesAttachedToCorner[_cornerReached])
@@ -476,7 +471,7 @@ public class ClimbShape : MonoBehaviour
                             }
 
                             if (Mathf2.GetClosestPointOnFiniteLine(movePositionAttempt, _cm.Vertices[firstCornerEdge.pointA], _cm.Vertices[firstCornerEdge.pointB]) == _cm.Vertices[_cornerReached] &&
-                                Vector3.Dot(firstCornerEdgeNormal, _moveDirection) < 0)
+                               ClimbUtils.MovingTowardsEdge(_cm, _moveDirection, firstCornerEdge))
                             {
                                 unsuitableCornerEdges.Remove(firstCornerEdge);
                                 _currentTriangleIndex = _cm.EdgeAdjacencyInfo[firstCornerEdge].triangleA;
@@ -589,9 +584,10 @@ public class ClimbShape : MonoBehaviour
 
                                         _lastTriangleIndex = tempLastIndex;
                                         _currentTriangleIndex = tempIndex;
+
                                         _newPosition = slidePoint;
 
-                                        if (Vector3.Dot((transform.rotation * _input).normalized, -currentEdgeNormal) < 0)
+                                        if (!ClimbUtils.MovingTowardsEdge(_cm, transform.rotation * _input, _currentEdgePoints))
                                         {
                                             _onEdge = false;
                                             foundNextEdge = true;
