@@ -7,6 +7,30 @@ using System;
 
 public class ClimbUtils
 {
+    public static void TryGetCornerMovedInto(ClimbableMesh cm, int cornerReached, ref int currentTriangleIndex, ref List<Edge> edgeCandidates, Vector3 movePositionAttempt, Vector3 moveDirection, ref EdgePoints currentEdgePoints)
+    {
+        Edge firstCornerEdge = EdgeUtils.FindFirstEdgeOnCorner(cornerReached, currentTriangleIndex, cm);
+        Edge secondCornerEdge = EdgeUtils.FindNextOutsideEdgeFromCorner(cm, cornerReached, currentTriangleIndex);
+
+        foreach (Edge e in cm.EdgesAttachedToCorner[cornerReached])
+        {
+            edgeCandidates.Add(e);
+        }
+
+        if (Mathf2.GetClosestPointOnFiniteLine(movePositionAttempt, cm.Vertices[firstCornerEdge.pointA], cm.Vertices[firstCornerEdge.pointB]) == cm.Vertices[cornerReached] &&
+           ClimbUtils.MovingTowardsEdge(cm, moveDirection, firstCornerEdge))
+        {
+            edgeCandidates.Remove(firstCornerEdge);
+            currentTriangleIndex = cm.EdgeAdjacencyInfo[firstCornerEdge].triangleA;
+            EdgeUtils.SetOrderedEdgePoints(cm, firstCornerEdge, cornerReached, ref currentEdgePoints);
+        }
+        else if (Mathf2.GetClosestPointOnFiniteLine(movePositionAttempt, cm.Vertices[secondCornerEdge.pointA], cm.Vertices[secondCornerEdge.pointB]) == cm.Vertices[cornerReached])
+        {
+            edgeCandidates.Remove(secondCornerEdge);
+            currentTriangleIndex = cm.EdgeAdjacencyInfo[secondCornerEdge].triangleA;
+            EdgeUtils.SetOrderedEdgePoints(cm, secondCornerEdge, cornerReached, ref currentEdgePoints);
+        }
+    }
     public static void ResolveCornerTraversal(
         ClimbableMesh cm,
         Transform playerTransform,
@@ -14,13 +38,9 @@ public class ClimbUtils
         ref int _lastTriangleIndex,
         ref int _backupCurrentTriangleIndex,
         ref int _backupLastTriangleIndex,
-        ref int tempIndex,
-        ref int tempLastIndex,
         List<Edge> edgeCandidates,
-        List<Edge> checkedEdges,
         ref EdgePoints _currentEdgePoints,
         ref EdgePoints _lastEdgePoints,
-        EdgePoints cornerEdgePoints,
         ref Vector3 _newPosition,
         ref Vector3 slidePoint,
         ref bool _onEdge,
@@ -35,8 +55,22 @@ public class ClimbUtils
     )
     {
         int x = 0;
+        int tempIndex = _currentTriangleIndex;
+        int tempLastIndex = _lastTriangleIndex;
 
         bool foundNextEdge = false;
+
+        List<Edge> checkedEdges = new List<Edge>();
+
+        EdgePoints cornerEdgePoints = new(true);
+
+        Edge foundEdge = EdgeUtils.FindFirstEdgeOnCorner(_cornerReached, _currentTriangleIndex, cm);
+
+        if (EdgeUtils.EdgeIsOutsideEdge(foundEdge, cm))
+        {
+            EdgeUtils.SetOrderedEdgePointsFromTriangle(cm, foundEdge, _cornerReached, _currentTriangleIndex, ref cornerEdgePoints);
+        }
+
         // until we've found edge
         while (!foundNextEdge)
         {
@@ -45,7 +79,7 @@ public class ClimbUtils
             foreach (Edge e in cm.TriangleAdjacencyInfo[tempIndex].edges)
             {
                 // if the edge is one of the edges attached to the current corner
-                if (!EdgeUtils.EdgeHasBeenRuledOut(cm, e, edgeCandidates, checkedEdges))
+                if (!EdgeUtils.EdgeIsACandidateAndNotAlreadyPassed(cm, e, edgeCandidates, checkedEdges))
                 {
                     // and it's an outside edge
                     if (EdgeUtils.EdgeIsOutsideEdge(e, cm))

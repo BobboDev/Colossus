@@ -8,6 +8,20 @@ using TMPro.EditorUtilities;
 
 public class EdgeUtils
 {
+    public static List<Edge> GetEdgesAttachedToCornerThatArentThisOne(ClimbableMesh cm, int _cornerReached, EdgePoints _currentEdgePoints)
+    {
+        List<Edge> edges = new();
+        // Add the non-outside edges on the corner to passed edges list
+        foreach (Edge e in cm.EdgesAttachedToCorner[_cornerReached])
+        {
+            if (!EdgesMatchByPosition(e, _currentEdgePoints, cm))
+            {
+                edges.Add(e);
+            }
+        }
+        return edges;
+    }
+
     public static bool CornersAreConvex(ClimbableMesh cm, EdgePoints _currentEdgePoints, EdgePoints _lastEdgePoints)
     {
         Vector3 closestPointOnEdge = GetClosestPointOnEdge(cm, _currentEdgePoints);
@@ -22,7 +36,7 @@ public class EdgeUtils
         return DoRaysIntersect(ray1, ray2);
     }
 
-    public static bool EdgeHasBeenRuledOut(ClimbableMesh cm, Edge currentEdge, List<Edge> unsuitableCornerEdges, List<Edge> checkedEdges)
+    public static bool EdgeIsACandidateAndNotAlreadyPassed(ClimbableMesh cm, Edge currentEdge, List<Edge> unsuitableCornerEdges, List<Edge> checkedEdges)
     {
         // we need to use a different method for contains - checking by their positions, since hard edges has different indices
         bool alreadyPassedThisEdge = false;

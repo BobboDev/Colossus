@@ -61,8 +61,8 @@ public class ClimbShape : MonoBehaviour
     void Awake()
     {
         Physics.autoSyncTransforms = true;
-        UnityEngine.Cursor.visible = false;
-        UnityEngine.Cursor.lockState = CursorLockMode.Locked;
+        Cursor.visible = false;
+        Cursor.lockState = CursorLockMode.Locked;
         Application.targetFrameRate = 300;
         // set the plane used for pathfinding to be oriented to the character
         _plane = new Plane(-transform.right, transform.position);
@@ -410,9 +410,8 @@ public class ClimbShape : MonoBehaviour
                         _currentEdgePoints.Set(_lastEdgePoints.Start, _lastEdgePoints.End, _lastEdgePoints.Other);
                         _currentTriangleIndex = _backupLastTriangleIndex;
                         totalDistanceChecked = distanceToMoveThisFrame;
-#if UNITY_EDITOR
-                        EditorApplication.isPaused = true;
-#endif
+                        if (Application.isEditor && !Application.isPlaying)
+                            EditorApplication.isPaused = true;
                         break;
                     }
                 }
@@ -450,72 +449,24 @@ public class ClimbShape : MonoBehaviour
                     }
                     else // If the next edge isn't an outside edge on the same triangle
                     {
-                        int timesLooped = 0;
-
                         _cornerReached = EdgeUtils.GetMatchingPointOnEdgeFromPosition(_cm, slidePoint, _currentEdgePoints);
 
                         List<Edge> edgeCandidates = new List<Edge>();
 
-                        // If the next edge attached to the corner is an outside edge
+                        // If the first edge of the next triangle attached to the corner is an outside edge, it means 
                         if (EdgeUtils.TryGetMatchingOutsideEdge(_cm, _currentTriangleIndex, _currentEdgePoints))
                         {
-                            // Add the non-outside edges on the corner to passed edges list
-                            foreach (Edge e in _cm.EdgesAttachedToCorner[_cornerReached])
-                            {
-                                if (!EdgeUtils.EdgesMatchByPosition(e, _currentEdgePoints, _cm))
-                                {
-                                    edgeCandidates.Add(e);
-                                }
-                            }
+                            edgeCandidates = EdgeUtils.GetEdgesAttachedToCornerThatArentThisOne(_cm, _cornerReached, _currentEdgePoints);
                         }
                         else
                         {
-                            // Didn't find outside edge, we're still sliding. If movepositionattempt doesn't land us somewhere in the middle of this edge or the next outside edge, we're stuck in a corner
-                            Edge firstCornerEdge = EdgeUtils.FindFirstEdgeOnCorner(_cornerReached, _currentTriangleIndex, _cm);
-                            Edge secondCornerEdge = EdgeUtils.FindNextOutsideEdgeFromCorner(_cm, _cornerReached, _currentTriangleIndex);
-
-                            timesLooped = 0;
-
-                            foreach (Edge e in _cm.EdgesAttachedToCorner[_cornerReached])
-                            {
-                                edgeCandidates.Add(e);
-                            }
-
-                            if (Mathf2.GetClosestPointOnFiniteLine(movePositionAttempt, _cm.Vertices[firstCornerEdge.pointA], _cm.Vertices[firstCornerEdge.pointB]) == _cm.Vertices[_cornerReached] &&
-                               ClimbUtils.MovingTowardsEdge(_cm, _moveDirection, firstCornerEdge))
-                            {
-                                edgeCandidates.Remove(firstCornerEdge);
-                                _currentTriangleIndex = _cm.EdgeAdjacencyInfo[firstCornerEdge].triangleA;
-                                EdgeUtils.SetOrderedEdgePoints(_cm, firstCornerEdge, _cornerReached, ref _currentEdgePoints);
-                            }
-                            else if (Mathf2.GetClosestPointOnFiniteLine(movePositionAttempt, _cm.Vertices[secondCornerEdge.pointA], _cm.Vertices[secondCornerEdge.pointB]) == _cm.Vertices[_cornerReached])
-                            {
-                                edgeCandidates.Remove(secondCornerEdge);
-                                _currentTriangleIndex = _cm.EdgeAdjacencyInfo[secondCornerEdge].triangleA;
-                                EdgeUtils.SetOrderedEdgePoints(_cm, secondCornerEdge, _cornerReached, ref _currentEdgePoints);
-                            }
+                            ClimbUtils.TryGetCornerMovedInto(_cm, _cornerReached, ref _currentTriangleIndex, ref edgeCandidates, movePositionAttempt, _moveDirection, ref _currentEdgePoints);
                         }
 
-                        int x = 0;
-                        int tempIndex = _currentTriangleIndex;
-                        int tempLastIndex = _lastTriangleIndex;
-
-                        List<Edge> checkedEdges = new List<Edge>();
-                        List<Edge> edgesCheckedOnCurrentCorner = new List<Edge>();
-
-                        cornerEdgePoints.Set(-1, -1, -1);
-
-                        int cornerTriangleIndex = tempIndex;
-
-                        Edge foundEdge = EdgeUtils.FindFirstEdgeOnCorner(_cornerReached, _currentTriangleIndex, _cm);
-
-                        if (EdgeUtils.EdgeIsOutsideEdge(foundEdge, _cm))
-                        {
-                            EdgeUtils.SetOrderedEdgePointsFromTriangle(_cm, foundEdge, _cornerReached, _currentTriangleIndex, ref cornerEdgePoints);
-                        }
-
-                        ClimbUtils.ResolveCornerTraversal(_cm, transform, ref _currentTriangleIndex, ref _lastTriangleIndex, ref _backupCurrentTriangleIndex, ref _backupLastTriangleIndex, ref tempIndex, ref tempLastIndex, edgeCandidates, checkedEdges, ref _currentEdgePoints, ref _lastEdgePoints, cornerEdgePoints, ref _newPosition, ref slidePoint, ref _onEdge, ref _input, _firstMoveDone, _cornerReached, ref totalDistanceChecked, distanceToMoveThisFrame, _movementMode, _plane, CharacterModel);
+                        // Either get next triangle and keep going until outside edge is found, or get far edge cut or cancel if traversal is recursive.
+                        ClimbUtils.ResolveCornerTraversal(_cm, transform, ref _currentTriangleIndex, ref _lastTriangleIndex, ref _backupCurrentTriangleIndex, ref _backupLastTriangleIndex, edgeCandidates, ref _currentEdgePoints, ref _lastEdgePoints, ref _newPosition, ref slidePoint, ref _onEdge, ref _input, _firstMoveDone, _cornerReached, ref totalDistanceChecked, distanceToMoveThisFrame, _movementMode, _plane, CharacterModel);
                     }
+
                     _newPosition = slidePoint;
                 }
                 else
@@ -524,39 +475,37 @@ public class ClimbShape : MonoBehaviour
                     _newPosition = slidePoint;
                 }
 
-                ////////////////////////////////
-                //                            //
-                //   !!!!!!!!!!!!!!!!!!!!!!   //
-                //   !!                  !!   //
-                //   !!   END REFACTOR   !!   //
-                //   !!                  !!   //
-                //   !! 510 to 458 LINES !!   //
-                //   !!                  !!   //
-                //   !!   END REFACTOR   !!   //
-                //   !!                  !!   //
-                //   !!!!!!!!!!!!!!!!!!!!!!   //
-                //                            //
-                ////////////////////////////////
-
                 remainingDistance = remainingDistance - Vector3.Distance(_newPosition, slidePoint);
 
                 _plane = new Plane(transform.rotation * Quaternion.Euler(0, 90, 0) * _input, _newPosition);
 
-                i++;
-                if (i > 1000)
+                if (++i > 1000)
                 {
-                    Debug.Log("WHOOPS " + _currentTriangleIndex);
-#if UNITY_EDITOR
-                    EditorApplication.isPaused = true;
-#endif
+                    Debug.Log("WHOOPS");
+                    if (Application.isEditor && !Application.isPlaying)
+                        EditorApplication.isPaused = true;
                     break;
                 }
             }
         }
 
 
+        ////////////////////////////////
+        //                            //
+        //   !!!!!!!!!!!!!!!!!!!!!!   //
+        //   !!                  !!   //
+        //   !!   END REFACTOR   !!   //
+        //   !!                  !!   //
+        //   !! 510 to 458 LINES !!   //
+        //   !!                  !!   //
+        //   !!   END REFACTOR   !!   //
+        //   !!                  !!   //
+        //   !!!!!!!!!!!!!!!!!!!!!!   //
+        //                            //
+        ////////////////////////////////
+
+
         // testing measurements, line should jitter if deltatime is wrong.
-        // Debug.DrawLine(transform.position, newPosition, Color.red);
 
         _barycentricCoordinate = Mathf2.GetBarycentricCoordinates(_newPosition, _cm.Vertices[_currentEdgePoints.Start], _cm.Vertices[_currentEdgePoints.End], _cm.Vertices[_currentEdgePoints.Other]);
 
