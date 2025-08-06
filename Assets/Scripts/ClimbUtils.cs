@@ -7,18 +7,19 @@ using System;
 
 public class ClimbUtils
 {
+    private static List<Edge> checkedEdges = new List<Edge>();
+
+
     public static void TryGetCornerMovedInto(ClimbableMesh cm, int cornerReached, ref int currentTriangleIndex, ref List<Edge> edgeCandidates, Vector3 movePositionAttempt, Vector3 moveDirection, ref EdgePoints currentEdgePoints)
     {
         Edge firstCornerEdge = EdgeUtils.FindFirstEdgeOnCorner(cornerReached, currentTriangleIndex, cm);
         Edge secondCornerEdge = EdgeUtils.FindNextOutsideEdgeFromCorner(cm, cornerReached, currentTriangleIndex);
 
-        foreach (Edge e in cm.EdgesAttachedToCorner[cornerReached])
-        {
-            edgeCandidates.Add(e);
-        }
+        edgeCandidates.AddRange(cm.EdgesAttachedToCorner[cornerReached]);
+
 
         if (Mathf2.GetClosestPointOnFiniteLine(movePositionAttempt, cm.Vertices[firstCornerEdge.pointA], cm.Vertices[firstCornerEdge.pointB]) == cm.Vertices[cornerReached] &&
-           ClimbUtils.MovingTowardsEdge(cm, moveDirection, firstCornerEdge))
+           MovingTowardsEdge(cm, moveDirection, firstCornerEdge))
         {
             edgeCandidates.Remove(firstCornerEdge);
             currentTriangleIndex = cm.EdgeAdjacencyInfo[firstCornerEdge].triangleA;
@@ -31,6 +32,7 @@ public class ClimbUtils
             EdgeUtils.SetOrderedEdgePoints(cm, secondCornerEdge, cornerReached, ref currentEdgePoints);
         }
     }
+
     public static void ResolveCornerTraversal(
         ClimbableMesh cm,
         Transform playerTransform,
@@ -60,7 +62,7 @@ public class ClimbUtils
 
         bool foundNextEdge = false;
 
-        List<Edge> checkedEdges = new List<Edge>();
+        checkedEdges.Clear();
 
         EdgePoints cornerEdgePoints = new(true);
 
@@ -70,6 +72,8 @@ public class ClimbUtils
         {
             EdgeUtils.SetOrderedEdgePointsFromTriangle(cm, foundEdge, _cornerReached, _currentTriangleIndex, ref cornerEdgePoints);
         }
+
+        Vector3 rotatedInput = playerTransform.rotation * _input;
 
         // until we've found edge
         while (!foundNextEdge)
@@ -96,7 +100,7 @@ public class ClimbUtils
 
                         _newPosition = slidePoint;
 
-                        if (!ClimbUtils.MovingTowardsEdge(cm, playerTransform.rotation * _input, _currentEdgePoints))
+                        if (!ClimbUtils.MovingTowardsEdge(cm, rotatedInput, _currentEdgePoints))
                         {
                             _onEdge = false;
                             foundNextEdge = true;
@@ -162,9 +166,8 @@ public class ClimbUtils
             {
 #if UNITY_EDITOR
                 EditorApplication.isPaused = true;
-#endif
                 Debug.Log("couldn't find next edge");
-
+#endif
                 return;
             }
         }

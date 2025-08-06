@@ -58,6 +58,7 @@ public class ClimbShape : MonoBehaviour
 
     Vector3 _previousRayCastPosition;
 
+
     void Awake()
     {
         Physics.autoSyncTransforms = true;
@@ -168,7 +169,10 @@ public class ClimbShape : MonoBehaviour
         }
         else
         {
+#if UNITY_EDITOR
+
             Debug.Log("forward zero");
+#endif
         }
 
         if (_movementMode == MovementMode.Directional)
@@ -228,7 +232,21 @@ public class ClimbShape : MonoBehaviour
         bool depenetrate = false;
         bool slide = false;
         float distanceToMoveThisFrame = directionInput.magnitude * _targetSpeed * Time.deltaTime;
+        ////////////////////////////////
+        //                            //
+        //   !!!!!!!!!!!!!!!!!!!!!!   //
+        //   !!                  !!   //
+        //   !!  START REFACTOR  !!   //
+        //   !!                  !!   //
+        //   !!  510 to 63 LINES !!   //
+        //   !!                  !!   //
+        //   !!  START REFACTOR  !!   //
+        //   !!                  !!   //
+        //   !!!!!!!!!!!!!!!!!!!!!!   //
+        //                            //
+        ////////////////////////////////
 
+        // This works in Build! It just fails in editor because of dodgy deltaTime. 
         if (depenetratePass)
         {
             Vector3 depenetrationDirection = Vector3.zero;
@@ -240,7 +258,10 @@ public class ClimbShape : MonoBehaviour
             {
                 foreach (Collider col in colliders)
                 {
+#if UNITY_EDITOR                    
                     Debug.Log("Found Collision " + col.name);
+#endif
+
                     Physics.ComputePenetration(DepenetrationCapsule, DepenetrationCapsule.transform.position, DepenetrationCapsule.transform.rotation, col, col.transform.position, col.transform.rotation, out depenetrationDirection, out depenetrationDistance);
                     if (depenetrationDistance > 0.00001f)
                     {
@@ -254,11 +275,8 @@ public class ClimbShape : MonoBehaviour
 
                 wallPlane.SetNormalAndPosition(wallNormal, depenetrationDirection * depenetrationDistance);
 
-                Ray depenetrateRay = new Ray();
-                depenetrateRay.direction = totalDepenetrationDirection.normalized;
-                depenetrateRay.origin = Vector3.zero;
+                Ray depenetrateRay = EdgeUtils.CreateRayFromDirection(Vector3.zero, totalDepenetrationDirection.normalized);
                 wallPlane.Raycast(depenetrateRay, out distanceToMoveThisFrame);
-                distanceToMoveThisFrame *= 1f;
 
                 forwardFromRecordedBarycentric = totalDepenetrationDirection.normalized;
 
@@ -278,6 +296,20 @@ public class ClimbShape : MonoBehaviour
                 _plane = new Plane(Mathf2.RotateAroundAxis(forwardFromRecordedBarycentric, transform.up, 90), transform.position);
             }
         }
+
+        ////////////////////////////////
+        //                            //
+        //   !!!!!!!!!!!!!!!!!!!!!!   //
+        //   !!                  !!   //
+        //   !!   END REFACTOR   !!   //
+        //   !!                  !!   //
+        //   !!  510 to 63 LINES !!   //
+        //   !!                  !!   //
+        //   !!   END REFACTOR   !!   //
+        //   !!                  !!   //
+        //   !!!!!!!!!!!!!!!!!!!!!!   //
+        //                            //
+        ////////////////////////////////
 
         if (!depenetrate && !slide)
         {
@@ -399,28 +431,14 @@ public class ClimbShape : MonoBehaviour
                         _currentEdgePoints.Set(_lastEdgePoints.Start, _lastEdgePoints.End, _lastEdgePoints.Other);
                         _currentTriangleIndex = _backupLastTriangleIndex;
                         totalDistanceChecked = distanceToMoveThisFrame;
-                        if (Application.isEditor && !Application.isPlaying)
-                            EditorApplication.isPaused = true;
-                        break;
+#if UNITY_EDITOR
+                        EditorApplication.isPaused = true;
+#endif
                     }
                 }
             }
             else // if on edge
             {
-                ////////////////////////////////
-                //                            //
-                //   !!!!!!!!!!!!!!!!!!!!!!   //
-                //   !!                  !!   //
-                //   !!  START REFACTOR  !!   //
-                //   !!                  !!   //
-                //   !!  510 to 63 LINES !!   //
-                //   !!                  !!   //
-                //   !!  START REFACTOR  !!   //
-                //   !!                  !!   //
-                //   !!!!!!!!!!!!!!!!!!!!!!   //
-                //                            //
-                ////////////////////////////////
-
                 // get the point where the character is trying to move, if it moved off the current tri into space
                 Vector3 movePositionAttempt = _newPosition + newDirection * remainingDistance;
                 Vector3 slidePoint = Mathf2.GetClosestPointOnFiniteLine(movePositionAttempt, _cm.Vertices[_currentEdgePoints.Start], _cm.Vertices[_currentEdgePoints.End]);
@@ -468,30 +486,13 @@ public class ClimbShape : MonoBehaviour
 
                 if (++i > 1000)
                 {
+#if UNITY_EDITOR
                     Debug.Log("WHOOPS");
-                    if (Application.isEditor && !Application.isPlaying)
-                        EditorApplication.isPaused = true;
-                    break;
+                    EditorApplication.isPaused = true;
+#endif
                 }
             }
         }
-
-        ////////////////////////////////
-        //                            //
-        //   !!!!!!!!!!!!!!!!!!!!!!   //
-        //   !!                  !!   //
-        //   !!   END REFACTOR   !!   //
-        //   !!                  !!   //
-        //   !!  510 to 63 LINES !!   //
-        //   !!                  !!   //
-        //   !!   END REFACTOR   !!   //
-        //   !!                  !!   //
-        //   !!!!!!!!!!!!!!!!!!!!!!   //
-        //                            //
-        ////////////////////////////////
-
-
-        // testing measurements, line should jitter if deltatime is wrong.
 
         _barycentricCoordinate = Mathf2.GetBarycentricCoordinates(_newPosition, _cm.Vertices[_currentEdgePoints.Start], _cm.Vertices[_currentEdgePoints.End], _cm.Vertices[_currentEdgePoints.Other]);
 

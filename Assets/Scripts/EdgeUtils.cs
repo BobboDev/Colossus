@@ -4,7 +4,6 @@ using Overhang;
 using UnityEngine;
 using System;
 using UnityEditor;
-using TMPro.EditorUtilities;
 
 public class EdgeUtils
 {
