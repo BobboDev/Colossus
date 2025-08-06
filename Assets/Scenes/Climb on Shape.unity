@@ -11712,9 +11712,17 @@ PrefabInstance:
       value: Hero
       objectReference: {fileID: 0}
     - target: {fileID: 6822702395071573166, guid: 8c3fa0b0e92df9847bd4048863ee3e95, type: 3}
+      propertyPath: ClimbingSpeed
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 6822702395071573166, guid: 8c3fa0b0e92df9847bd4048863ee3e95, type: 3}
       propertyPath: CharacterPivot
       value: 
       objectReference: {fileID: 1110458746}
+    - target: {fileID: 6822702395071573166, guid: 8c3fa0b0e92df9847bd4048863ee3e95, type: 3}
+      propertyPath: DirectionalSpeed
+      value: 1
+      objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
     m_AddedGameObjects: []

@@ -3,7 +3,6 @@ using UnityEngine;
 using UnityEditor;
 using Overhang;
 using KinematicCharacterController;
-using UnityEditor.Callbacks;
 
 public class ClimbShape : MonoBehaviour
 {
@@ -77,6 +76,11 @@ public class ClimbShape : MonoBehaviour
 
     void LateUpdate()
     {
+        Climb();
+        // Climb();
+    }
+    void Climb()
+    {
         Physics.SyncTransforms();
         // Calculate the time it took to render the last frame
         _deltaTimeFPS += (Time.unscaledDeltaTime - _deltaTimeFPS) * 0.1f;
@@ -95,7 +99,7 @@ public class ClimbShape : MonoBehaviour
         }
         else
         {
-            Debug.DrawLine(CharacterPivot.position, CharacterPivot.position + Vector3.up, Color.green);
+            // Debug.DrawLine(CharacterPivot.position, CharacterPivot.position + Vector3.up, Color.green);
             // Debug.DrawLine(transform.position, CharacterPivot.position + Vector3.up, Color.red);
 
 
@@ -139,12 +143,12 @@ public class ClimbShape : MonoBehaviour
             _cc.Motor.SetPosition(finalPosition);
 
             // Debug.DrawLine(finalPosition, finalPosition + Vector3.up, Color.red);
-            Debug.DrawLine(_positionLastFrame, finalPosition, Color.cyan);
+            // Debug.DrawLine(_positionLastFrame, finalPosition, Color.cyan);
 
             if (Input.GetKeyDown(KeyCode.Space))
             {
-                Debug.DrawLine(transform.position, transform.position + finalRotation * Vector3.forward, Color.blue);
-                Debug.DrawLine(finalPosition, finalPosition + Vector3.up, Color.red);
+                // Debug.DrawLine(transform.position, transform.position + finalRotation * Vector3.forward, Color.blue);
+                // Debug.DrawLine(finalPosition, finalPosition + Vector3.up, Color.red);
 
                 _timeSinceJumped = 0;
                 ClimbUtils.LeaveClimbableMesh(transform, _cc, CharacterPivot, _positionLastFrame, finalPosition, finalRotation, _rb, ref _isClimbing);
@@ -229,6 +233,7 @@ public class ClimbShape : MonoBehaviour
             {
                 if (!depenetratePass)
                 {
+                    Debug.DrawLine(transform.position, transform.position + forwardFromRecordedBarycentric, Color.red);
                     _afterDepenetrateRotation = Quaternion.LookRotation(Vector3.ProjectOnPlane(forwardFromRecordedBarycentric, Vector3.up).normalized, Vector3.up);
                 }
                 if (isFinalPass)
@@ -289,7 +294,6 @@ public class ClimbShape : MonoBehaviour
 #if UNITY_EDITOR                    
                     Debug.Log("Found Collision " + col.name);
 #endif
-
                     Physics.ComputePenetration(DepenetrationCapsule, DepenetrationCapsule.transform.position, DepenetrationCapsule.transform.rotation, col, col.transform.position, col.transform.rotation, out depenetrationDirection, out depenetrationDistance);
                     if (depenetrationDistance > 0.00001f)
                     {
