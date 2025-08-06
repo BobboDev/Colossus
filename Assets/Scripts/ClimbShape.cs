@@ -2,12 +2,15 @@ using System.Collections.Generic;
 using UnityEngine;
 using UnityEditor;
 using Overhang;
+using KinematicCharacterController;
+using UnityEditor.Callbacks;
 
 public class ClimbShape : MonoBehaviour
 {
+    HeroCharacterController _cc;
     ClimbableMesh _cm;
 
-    public Transform CharacterModel;
+    public Transform CharacterPivot;
     Rigidbody _rb;
     int _currentTriangleIndex, _lastTriangleIndex;
 
@@ -43,7 +46,7 @@ public class ClimbShape : MonoBehaviour
     bool _firstMoveDone;
     bool _goForwardTest = false;
 
-    float _deltaTime;
+    float _deltaTimeFPS;
     float _frameRate;
 
     public MovementMode _movementMode;
@@ -57,7 +60,8 @@ public class ClimbShape : MonoBehaviour
     Quaternion _afterDepenetrateRotation;
 
     Vector3 _previousRayCastPosition;
-
+    Vector3 _positionLastFrame;
+    float _timeSinceJumped;
 
     void Awake()
     {
@@ -67,6 +71,7 @@ public class ClimbShape : MonoBehaviour
         Application.targetFrameRate = 300;
         // set the plane used for pathfinding to be oriented to the character
         _plane = new Plane(-transform.right, transform.position);
+        _cc = GetComponent<HeroCharacterController>();
         _rb = GetComponent<Rigidbody>();
     }
 
@@ -74,23 +79,25 @@ public class ClimbShape : MonoBehaviour
     {
         Physics.SyncTransforms();
         // Calculate the time it took to render the last frame
-        _deltaTime += (Time.unscaledDeltaTime - _deltaTime) * 0.1f;
+        _deltaTimeFPS += (Time.unscaledDeltaTime - _deltaTimeFPS) * 0.1f;
+        _timeSinceJumped += Time.deltaTime;
 
         // Calculate the frame rate in frames per second
-        _frameRate = 1.0f / _deltaTime;
+        _frameRate = 1.0f / _deltaTimeFPS;
 
         // if not on a mesh, raycast to find a mesh
         if (!_isClimbing)
         {
-            ClimbUtils.TryStartClimb(ref _cm, transform, ref _currentEdgePoints, ref _currentTriangleIndex, ref _lastTriangleIndex, ref _firstMoveDone, ref _testCut, ref _barycentricCoordinate, ref _lastBarycentricCoordinate, ref _barycentricCoordinateBehind, ref _previousRayCastPosition, _layerMask, ref _isClimbing);
+
+            ClimbUtils.TryStartClimb(ref _cm, transform, _rb, _timeSinceJumped, ref _currentEdgePoints, ref _currentTriangleIndex, ref _lastTriangleIndex, ref _firstMoveDone, ref _testCut, ref _barycentricCoordinate, ref _lastBarycentricCoordinate, ref _barycentricCoordinateBehind, ref _previousRayCastPosition, _layerMask, ref _isClimbing);
+
+            CharacterPivot.rotation = transform.rotation;
         }
         else
         {
-            if (Input.GetKey(KeyCode.Space))
-            {
-                ClimbUtils.LeaveClimbableMesh(transform, CharacterModel, _rb, ref _isClimbing);
-                return;
-            }
+            Debug.DrawLine(CharacterPivot.position, CharacterPivot.position + Vector3.up, Color.green);
+            // Debug.DrawLine(transform.position, CharacterPivot.position + Vector3.up, Color.red);
+
 
             _cm.RecalculateMesh(false);
 
@@ -111,7 +118,6 @@ public class ClimbShape : MonoBehaviour
             // calculate movement on the mesh based on input
             Travel(directionInput: tempInput, depenetratePass: false, isFinalPass: false);
 
-            transform.position = EdgeUtils.GetPositionFromBarycentric(_cm, _barycentricCoordinate, _currentEdgePoints);
 
             int depenetrationIterations = 1;
             for (int i = 0; i < depenetrationIterations; i++)
@@ -119,12 +125,34 @@ public class ClimbShape : MonoBehaviour
                 bool isFinalPass = i == depenetrationIterations - 1;
                 Depenetrate(isFinalPass);
                 Physics.SyncTransforms();
+
             }
 
             // Get the new deformed position of the player based on the vertex and barycentric coordinate that was calculated in the last loop
-            transform.position = EdgeUtils.GetPositionFromBarycentric(_cm, _barycentricCoordinate, _currentEdgePoints);
-        }
+            Vector3 finalPosition = EdgeUtils.GetPositionFromBarycentric(_cm, _barycentricCoordinate, _currentEdgePoints);
+            Quaternion finalRotation = Quaternion.LookRotation(Vector3.ProjectOnPlane(transform.forward, Vector3.up).normalized, Vector3.up);
 
+
+            transform.position = finalPosition;
+            _rb.position = finalPosition;
+            _cc.Motor.BaseVelocity = Vector3.zero;
+            _cc.Motor.SetPosition(finalPosition);
+
+            // Debug.DrawLine(finalPosition, finalPosition + Vector3.up, Color.red);
+            Debug.DrawLine(_positionLastFrame, finalPosition, Color.cyan);
+
+            if (Input.GetKeyDown(KeyCode.Space))
+            {
+                Debug.DrawLine(transform.position, transform.position + finalRotation * Vector3.forward, Color.blue);
+                Debug.DrawLine(finalPosition, finalPosition + Vector3.up, Color.red);
+
+                _timeSinceJumped = 0;
+                ClimbUtils.LeaveClimbableMesh(transform, _cc, CharacterPivot, _positionLastFrame, finalPosition, finalRotation, _rb, ref _isClimbing);
+                return;
+            }
+
+            _positionLastFrame = finalPosition;
+        }
     }
 
     void Depenetrate(bool isFinalPass)
@@ -189,9 +217,9 @@ public class ClimbShape : MonoBehaviour
                 }
                 if (isFinalPass)
                 {
-                    CharacterModel.rotation = _afterDepenetrateRotation;
+                    CharacterPivot.rotation = _afterDepenetrateRotation;
                 }
-                Plane NewtempForwardPlane = new Plane(Quaternion.FromToRotation(Vector3.up, groundNormal) * CharacterModel.right, transform.position);
+                Plane NewtempForwardPlane = new Plane(Quaternion.FromToRotation(Vector3.up, groundNormal) * CharacterPivot.right, transform.position);
                 Vector3 cutDirection = Mathf2.RotateAroundAxis(NewtempForwardPlane.normal, groundNormal, 90);
                 forwardPointOnTriangle = EdgeUtils.FindTrianglePlaneIntersection(_cm, ref _currentEdgePoints, _currentEdgePoints, _currentTriangleIndex, _lastTriangleIndex, ref _firstMoveDone, cutDirection, transform.position, NewtempForwardPlane, CutType.Test);
                 behindPointOnTriangle = EdgeUtils.FindTrianglePlaneIntersection(_cm, ref _currentEdgePoints, _currentEdgePoints, _currentTriangleIndex, _lastTriangleIndex, ref _firstMoveDone, -cutDirection, transform.position, NewtempForwardPlane, CutType.Test);
@@ -205,7 +233,7 @@ public class ClimbShape : MonoBehaviour
                 }
                 if (isFinalPass)
                 {
-                    CharacterModel.rotation = _afterDepenetrateRotation;
+                    CharacterPivot.rotation = _afterDepenetrateRotation;
                 }
             }
             _targetSpeed = DirectionalSpeed;
@@ -214,7 +242,7 @@ public class ClimbShape : MonoBehaviour
         else
         {
             _targetSpeed = ClimbingSpeed;
-            CharacterModel.localRotation = Quaternion.identity;
+            CharacterPivot.localRotation = Quaternion.identity;
         }
 
         // This calculates the move direction. What happens if I just rotate this?
@@ -225,8 +253,8 @@ public class ClimbShape : MonoBehaviour
         Vector3 newDirection = _moveDirection;
 
         // calculate distance to move
-        Vector3 _checkPositionStart = CharacterModel.position + CharacterModel.up * 0.05f;
-        Vector3 _checkPositionEnd = CharacterModel.position + CharacterModel.up * 0.15f;
+        Vector3 _checkPositionStart = CharacterPivot.position + CharacterPivot.up * 0.05f;
+        Vector3 _checkPositionEnd = CharacterPivot.position + CharacterPivot.up * 0.15f;
         Collider[] colliders = Physics.OverlapCapsule(_checkPositionStart, _checkPositionEnd, 0.05f, _layerMaskForwardProjection);
 
         bool depenetrate = false;
@@ -316,11 +344,11 @@ public class ClimbShape : MonoBehaviour
             // Create plane to calculate "cuts" from
             if (_movementMode == MovementMode.Car)
             {
-                _plane = new Plane(CharacterModel.rotation * (Quaternion.Euler(0, 90, 0) * _input), transform.position);
+                _plane = new Plane(CharacterPivot.rotation * (Quaternion.Euler(0, 90, 0) * _input), transform.position);
             }
             else
             {
-                _plane = new Plane(Quaternion.FromToRotation(Vector3.up, groundNormal) * CharacterModel.right, transform.position);
+                _plane = new Plane(Quaternion.FromToRotation(Vector3.up, groundNormal) * CharacterPivot.right, transform.position);
             }
 
         }
@@ -470,7 +498,7 @@ public class ClimbShape : MonoBehaviour
                         }
 
                         // Either get next triangle and keep going until outside edge is found, or get far edge cut or cancel if traversal is recursive.
-                        ClimbUtils.ResolveCornerTraversal(_cm, transform, ref _currentTriangleIndex, ref _lastTriangleIndex, ref _backupCurrentTriangleIndex, ref _backupLastTriangleIndex, edgeCandidates, ref _currentEdgePoints, ref _lastEdgePoints, ref _newPosition, ref slidePoint, ref _onEdge, ref _input, _firstMoveDone, _cornerReached, ref totalDistanceChecked, distanceToMoveThisFrame, _movementMode, _plane, CharacterModel);
+                        ClimbUtils.ResolveCornerTraversal(_cm, transform, ref _currentTriangleIndex, ref _lastTriangleIndex, ref _backupCurrentTriangleIndex, ref _backupLastTriangleIndex, edgeCandidates, ref _currentEdgePoints, ref _lastEdgePoints, ref _newPosition, ref slidePoint, ref _onEdge, ref _input, _firstMoveDone, _cornerReached, ref totalDistanceChecked, distanceToMoveThisFrame, _movementMode, _plane, CharacterPivot);
                     }
 
                     _newPosition = slidePoint;
@@ -515,7 +543,7 @@ public class ClimbShape : MonoBehaviour
             }
             else
             {
-                _testPlane = new Plane(-CharacterModel.right, triCenter);
+                _testPlane = new Plane(-CharacterPivot.right, triCenter);
             }
         }
 
@@ -533,7 +561,7 @@ public class ClimbShape : MonoBehaviour
         }
         else
         {
-            _forwardLastFrame = CharacterModel.forward;
+            _forwardLastFrame = CharacterPivot.forward;
         }
     }
 

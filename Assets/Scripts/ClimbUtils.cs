@@ -331,6 +331,8 @@ public class ClimbUtils
     public static void TryStartClimb(
         ref ClimbableMesh cm,
         Transform playerTransform,
+        Rigidbody rb,
+        float timeSinceJumped,
         ref EdgePoints currentEdgePoints,
         ref int currentTriangleIndex,
         ref int lastTriangleIndex,
@@ -347,13 +349,15 @@ public class ClimbUtils
     {
         firstMoveDone = false;
         RaycastHit hit;
-        if (Physics.Raycast(playerTransform.position + playerTransform.up * 0.1f, -playerTransform.up, out hit, 0.2f, layerMask)
-        || Physics.Raycast(previousRaycastPosition, (previousRaycastPosition - playerTransform.position).normalized, out hit, Vector3.Distance(previousRaycastPosition, playerTransform.position), layerMask))
+        if (timeSinceJumped > 0.5f && (Physics.Raycast(playerTransform.position + playerTransform.up * 0.1f, -playerTransform.up, out hit, 0.2f, layerMask)
+        || Physics.Raycast(previousRaycastPosition, (previousRaycastPosition - playerTransform.position).normalized, out hit, Vector3.Distance(previousRaycastPosition, playerTransform.position), layerMask)))
         {
             GameObject temp = hit.collider.gameObject;
             cm = temp.GetComponent<ClimbableMesh>();
 
             isClimbing = true;
+            rb.isKinematic = true;
+
             playerTransform.position = hit.point;
             currentTriangleIndex = hit.triangleIndex * 3;
             barycentricCoordinate = hit.barycentricCoordinate;
@@ -372,13 +376,16 @@ public class ClimbUtils
         previousRaycastPosition = playerTransform.position + playerTransform.up * 0.1f;
     }
 
-    public static void LeaveClimbableMesh(Transform playerTransform, Transform CharacterModel, Rigidbody rb, ref bool isClimbing)
+    public static void LeaveClimbableMesh(Transform playerTransform, HeroCharacterController cc, Transform CharacterPivot, Vector3 positionLastFrame, Vector3 newPosition, Quaternion newRotation, Rigidbody rb, ref bool isClimbing)
     {
-        // MYSTERY
-        playerTransform.position = CharacterModel.position;
-        rb.position = CharacterModel.position;
-        rb.GetComponent<KinematicCharacterController.KinematicCharacterMotor>().SetPositionAndRotation(CharacterModel.position, CharacterModel.rotation);
+        cc.Motor.SetRotation(newRotation);
+        cc.AddVelocity((newPosition - positionLastFrame) / Time.deltaTime);
+        rb.rotation = newRotation;
+        rb.isKinematic = false;
+
         isClimbing = false;
+        playerTransform.rotation = newRotation;
+        CharacterPivot.rotation = newRotation;
     }
 }
 
