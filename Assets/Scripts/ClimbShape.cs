@@ -76,9 +76,13 @@ public class ClimbShape : MonoBehaviour
 
     void LateUpdate()
     {
-        Climb();
-        // Climb();
+        int movementSteps = 2;
+        for (int i = 0; i < movementSteps; i++)
+        {
+            Climb();
+        }
     }
+
     void Climb()
     {
         Physics.SyncTransforms();
@@ -559,14 +563,14 @@ public class ClimbShape : MonoBehaviour
         _testCut = EdgeUtils.FindTrianglePlaneIntersection(_cm, ref _currentEdgePoints, _currentEdgePoints, _currentTriangleIndex, _lastTriangleIndex, ref _firstMoveDone, -_castDirectionTest, triCenter, _testPlane, CutType.Test);
         _barycentricCoordinateBehind = Mathf2.GetBarycentricCoordinates(_testCut, _cm.Vertices[_currentEdgePoints.Start], _cm.Vertices[_currentEdgePoints.End], _cm.Vertices[_currentEdgePoints.Other]);
 
-        if (forwardFromRecordedBarycentric != Vector3.zero)
-        {
-            _forwardLastFrame = forwardFromRecordedBarycentric;
-        }
-        else
-        {
-            _forwardLastFrame = CharacterPivot.forward;
-        }
+        // if (forwardFromRecordedBarycentric != Vector3.zero)
+        // {
+        //     _forwardLastFrame = forwardFromRecordedBarycentric;
+        // }
+        // else
+        // {
+        _forwardLastFrame = CharacterPivot.forward;
+        // }
     }
 
     void OnGUI()
