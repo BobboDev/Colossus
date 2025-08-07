@@ -103,10 +103,6 @@ public class ClimbShape : MonoBehaviour
         }
         else
         {
-            // Debug.DrawLine(CharacterPivot.position, CharacterPivot.position + Vector3.up, Color.green);
-            // Debug.DrawLine(transform.position, CharacterPivot.position + Vector3.up, Color.red);
-
-
             _cm.RecalculateMesh(false);
 
             // Get input
@@ -140,20 +136,13 @@ public class ClimbShape : MonoBehaviour
             Vector3 finalPosition = EdgeUtils.GetPositionFromBarycentric(_cm, _barycentricCoordinate, _currentEdgePoints);
             Quaternion finalRotation = Quaternion.LookRotation(Vector3.ProjectOnPlane(transform.forward, Vector3.up).normalized, Vector3.up);
 
-
             transform.position = finalPosition;
             _rb.position = finalPosition;
             _cc.Motor.BaseVelocity = Vector3.zero;
             _cc.Motor.SetPosition(finalPosition);
 
-            // Debug.DrawLine(finalPosition, finalPosition + Vector3.up, Color.red);
-            // Debug.DrawLine(_positionLastFrame, finalPosition, Color.cyan);
-
             if (Input.GetKeyDown(KeyCode.Space))
             {
-                // Debug.DrawLine(transform.position, transform.position + finalRotation * Vector3.forward, Color.blue);
-                // Debug.DrawLine(finalPosition, finalPosition + Vector3.up, Color.red);
-
                 _timeSinceJumped = 0;
                 ClimbUtils.LeaveClimbableMesh(transform, _cc, CharacterPivot, _positionLastFrame, finalPosition, finalRotation, _rb, ref _isClimbing);
                 return;

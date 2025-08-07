@@ -72,6 +72,7 @@ namespace Overhang
         {
             FaceSelection = GetComponent<FaceSelection>();
             InitializeMesh();
+            gameObject.layer = LayerMask.NameToLayer("Climbable");
         }
 
         // Getting stuff working based on slope, no edge   

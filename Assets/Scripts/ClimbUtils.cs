@@ -349,8 +349,9 @@ public class ClimbUtils
     {
         firstMoveDone = false;
         RaycastHit hit;
-        if (timeSinceJumped > 0.5f && (Physics.Raycast(playerTransform.position + playerTransform.up * 0.1f, -playerTransform.up, out hit, 0.2f, layerMask)
-        || Physics.Raycast(previousRaycastPosition, (previousRaycastPosition - playerTransform.position).normalized, out hit, Vector3.Distance(previousRaycastPosition, playerTransform.position), layerMask)))
+        Vector3 rayOrigin = playerTransform.position + playerTransform.up * 0.1f;
+        if ((timeSinceJumped > 0.5f && Physics.SphereCast(rayOrigin, 0.05f, -playerTransform.up, out hit, 0.11f, layerMask) && Physics.Raycast(rayOrigin, (hit.point - rayOrigin).normalized, out hit, Vector3.Distance(hit.point, rayOrigin) + 0.01f, layerMask))
+        || Physics.Raycast(previousRaycastPosition, (previousRaycastPosition - playerTransform.position).normalized, out hit, Vector3.Distance(previousRaycastPosition, playerTransform.position), layerMask))
         {
             GameObject temp = hit.collider.gameObject;
             cm = temp.GetComponent<ClimbableMesh>();
